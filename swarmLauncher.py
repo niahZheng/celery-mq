@@ -19,7 +19,7 @@ worker_name = worker_name_prefix + random_suffix
 
 # Start the Celery worker with the generated hostname
 subprocess.Popen(f"celery -A celery_worker worker --loglevel=INFO --hostname={worker_name_prefix + generate_random_string(8)}", shell=True)
-subprocess.Popen(f"celery -A celery_worker worker --loglevel=INFO --hostname={worker_name_prefix + generate_random_string(8)}", shell=True)
-subprocess.Popen(f"celery -A celery_worker worker --loglevel=INFO --hostname={worker_name_prefix + generate_random_string(8)}", shell=True)
+# subprocess.Popen(f"celery -A celery_worker worker --loglevel=INFO --hostname={worker_name_prefix + generate_random_string(8)}", shell=True)
+# subprocess.Popen(f"celery -A celery_worker worker --loglevel=INFO --hostname={worker_name_prefix + generate_random_string(8)}", shell=True)
 # subprocess.Popen(f"celery -A celery_worker worker --loglevel=INFO --hostname={worker_name_prefix + generate_random_string(8)}", shell=True)
 # subprocess.Popen(f"celery -A celery_worker worker --loglevel=INFO --hostname={worker_name_prefix + generate_random_string(8)}", shell=True)

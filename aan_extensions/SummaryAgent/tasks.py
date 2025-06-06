@@ -3,7 +3,7 @@ from celery_worker import app
 from BaseAgent import BaseTask
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind
-# from .summ import summarize
+from .summ import summarize
 import logging
 import json
 
@@ -52,8 +52,7 @@ def process_transcript(self, topic, message):
                         )
                         with trace.get_tracer(__name__).start_as_current_span(
                             "summarize"):
-                            # new_summary = summarize(transcription_text)
-                            new_summary = ""
+                            new_summary = summarize(transcription_text)
 
                             if new_summary:
                                 summary_topic = f"agent-assist/{client_id}/summarization"

@@ -11,13 +11,6 @@ from celery.signals import worker_process_init
 from dotenv import load_dotenv
 import os
 
-# 加载 .env 文件中的环境变量
-load_dotenv(override=True)  # 添加 override=True 确保覆盖已存在的环境变量
-
-# 打印环境变量值用于调试
-# print("当前工作目录:", os.getcwd())
-# print("AAN_CELERY_BROKER_URI:", os.getenv("AAN_CELERY_BROKER_URI"))
-
 logger = logging.getLogger(__name__)
 
 DISABLE_TRACING = os.getenv('DISABLE_TRACING', False) == 'true'

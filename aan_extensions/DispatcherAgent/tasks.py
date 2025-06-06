@@ -33,7 +33,7 @@ def process_transcript(self,topic, message):
                    # NextBestActionAgent.tasks.process_transcript.si(topic,message),
                     # SummaryAgent.tasks.process_transcript.si(topic,message)
                     group(
-                         SummaryAgent.tasks.process_transcript.si(topic,message)
+                         SummaryAgent.tasks.process_transcript.si(topic,message),
                     )
                 )
                 chained_tasks.apply_async()

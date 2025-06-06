@@ -4,6 +4,7 @@ from BaseAgent import BaseTask
 import logging
 import json
 import re
+from .nba import generate_next_best_action, check_action_completion, create_session
 
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind
@@ -73,9 +74,7 @@ def process_transcript(self, topic, message):
                     # actually you can't have empty lists in redis
                     # self.redis_client.rpush(client_id + '_actions', json.dumps())
                     client_id = message_data['parameters']['session_id']
-                    # wa_session_id = create_session()
-                    wa_session_id = "123"
-
+                    wa_session_id = create_session()
                     print(f"client_id: {client_id} - wa_session_id {wa_session_id}")
                     self.redis_client.set(client_id + '_nba_wa', wa_session_id)
                 elif match and message_data['type'] == 'session_ended':
@@ -96,9 +95,7 @@ def process_transcript(self, topic, message):
                         nba_length = self.redis_client.llen(client_id + '_nba_actions')
                         print(f"nba_length {nba_length}")
                         if nba_length == 0:
-                            # action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
-                            action = "noresponse"
-                            options = []
+                            action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
                             logging.info(f"Generated action for session {client_id}: {action}")
                             if action and action !="noresponse":
                                 # since actions are distributed, maybe this action_id thing is inefficient?
@@ -133,11 +130,7 @@ def process_transcript(self, topic, message):
                         actions = self.redis_client.lrange(client_id + '_nba_actions', 0, -1) or []
                         # actions is array of:
                         # {"action_id": action_id, "action": action, "status": "pending"}
-
-                        # completed_action_ids_idxs, completed_actions_ids = check_action_completion(client_id, last_transcript["text"],actions)
-                        completed_action_ids_idxs = []
-                        completed_actions_ids = []
-
+                        completed_action_ids_idxs, completed_actions_ids = check_action_completion(client_id, last_transcript["text"], actions)
                         # completed_action_ids is a list of action_ids
                         # updates the actions list in redis with completed status
 
@@ -173,7 +166,7 @@ def process_transcript(self, topic, message):
                 elif match and message_data['type'] == 'manual_completion':
                     # agent clicked on UI
                     wa_session = self.redis_client.get(client_id + '_nba_wa')
-                    # action, options = generate_next_best_action(client_id, message_data['parameters']['text'],wa_session,True) 
+                    action, options = generate_next_best_action(client_id, message_data['parameters']['text'],wa_session,True) 
                     if action:
                             action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
                             action_payload = {"action_id": action_id, "action": action, "status": "pending"}
