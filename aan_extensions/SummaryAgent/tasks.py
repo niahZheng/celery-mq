@@ -52,7 +52,8 @@ def process_transcript(self, topic, message):
                         )
                         with trace.get_tracer(__name__).start_as_current_span(
                             "summarize"):
-                            new_summary = summarize(transcription_text)
+                            # new_summary = summarize(transcription_text)
+                            new_summary = "This is a test summary"
 
                             if new_summary:
                                 summary_topic = f"agent-assist/{client_id}/summarization"
