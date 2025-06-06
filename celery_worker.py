@@ -39,7 +39,7 @@ def init_celery_tracing(*args, **kwargs):
 app = Celery(
     "agent_assist_neo",
     broker=os.getenv("AAN_CELERY_BROKER_URI", "amqp://rxadmin:rxadmin321@20.39.130.141:5672"),
-    # backend=os.getenv("AAN_CELERY_BACKEND_URI", "redis://localhost:6379/1"),
+    backend=os.getenv("AAN_CELERY_BACKEND_URI", "redis://localhost:6379/1"),
     include=['aan_extensions.TranscriptionAgent.tasks', 
              'aan_extensions.DispatcherAgent.tasks',
              'aan_extensions.NextBestActionAgent.tasks',
@@ -47,6 +47,9 @@ app = Celery(
              'aan_extensions.SummaryAgent.tasks',
              ]
 )
+
+# 添加新的配置设置
+app.conf.broker_connection_retry_on_startup = True
 
 if __name__ == '__main__':
     app.start()
