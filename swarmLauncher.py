@@ -5,11 +5,17 @@ import sys
 import os
 import threading
 import logging
+import warnings
 from typing import List
+
+# 配置警告过滤
+warnings.filterwarnings('ignore', category=SyntaxWarning)
+warnings.filterwarnings('ignore', category=UserWarning, module='pkg_resources')
+warnings.filterwarnings('ignore', category=UserWarning, module='opentelemetry.instrumentation.dependencies')
 
 # 配置日志
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -40,6 +46,7 @@ def start_celery_worker(worker_name: str) -> subprocess.Popen:
         env = os.environ.copy()
         env['CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP'] = 'true'
         env['CELERY_LOG_LEVEL'] = 'INFO'  # 改为 INFO 级别
+        env['PYTHONWARNINGS'] = 'ignore'  # 忽略 Python 警告
         
         # 构建 Celery worker 命令
         cmd = [

@@ -3,7 +3,7 @@ from celery_worker import app
 from BaseAgent import BaseTask
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind
-from .summ import summarize
+# from .summ import summarize
 import logging
 import json
 
