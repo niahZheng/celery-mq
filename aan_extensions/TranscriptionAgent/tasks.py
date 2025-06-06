@@ -39,9 +39,10 @@ def process_transcript(self,topic, message):
         message_data = json.loads(message)
         try:
             with trace.get_tracer(__name__).start_as_current_span("emit_socketio") as child_span:
+                print("emit_socketio")
                 #self.await_sio_emit('celeryMessage', {'payloadString': message, 'destinationName': topic}, namespace='/celery')
 
-                self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic, 'agent_id': message_data['agent_id']}, namespace='/celery')
+                # self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic, 'agent_id': message_data['agent_id']}, namespace='/celery')
                 # self.redis_client.append_to_list_json()
         except Exception as e:
             print(e)

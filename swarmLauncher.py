@@ -4,7 +4,15 @@ import subprocess
 import sys
 import os
 import threading
+import logging
 from typing import List
+
+# 配置日志
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def generate_random_string(length: int) -> str:
     """生成指定长度的随机字符串"""
@@ -31,34 +39,43 @@ def start_celery_worker(worker_name: str) -> subprocess.Popen:
         # 设置环境变量
         env = os.environ.copy()
         env['CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP'] = 'true'
+        env['CELERY_LOG_LEVEL'] = 'INFO'  # 改为 INFO 级别
         
         # 构建 Celery worker 命令
         cmd = [
             "celery",
             "-A", "celery_worker",
             "worker",
-            "--loglevel=INFO",
+            "--loglevel=INFO",  # 改为 INFO 级别
             f"--hostname={worker_name}",
-            "--pool=solo",  # Windows 上推荐使用 solo 池
-            "-Q", "transcription"  # 指定队列
+            "--pool=solo",
+            # 监听所有队列
+            "-Q", "dispatcher,transcription,nextbestaction,cache,summary",
+            "--events",  # 启用事件监控
+            "--concurrency=1",  # 限制并发数
+            "--without-gossip",  # 禁用 gossip
+            "--without-mingle",  # 禁用 mingle
+            "--without-heartbeat"  # 禁用心跳
         ]
+        
+        logger.info(f"Starting worker {worker_name} with command: {' '.join(cmd)}")
         
         # 启动进程，不捕获输出
         process = subprocess.Popen(
             cmd,
-            stdout=None,  # 直接输出到控制台
-            stderr=None,  # 直接输出到控制台
+            stdout=None,
+            stderr=None,
             text=True,
-            bufsize=1,  # 行缓冲
+            bufsize=1,
             universal_newlines=True,
-            env=env  # 使用修改后的环境变量
+            env=env
         )
         
-        print(f"✅ Worker {worker_name} 已启动 (PID: {process.pid})")
+        logger.info(f"✅ Worker {worker_name} 已启动 (PID: {process.pid})")
         return process
         
     except Exception as e:
-        print(f"❌ 启动 worker {worker_name} 失败: {str(e)}")
+        logger.error(f"❌ 启动 worker {worker_name} 失败: {str(e)}")
         return None
 
 def main():
@@ -66,29 +83,28 @@ def main():
     workers: List[subprocess.Popen] = []
     
     try:
-        # 启动多个 worker
-        for _ in range(1):  # 启动 3 个 worker
-            worker_name = f"agent-{generate_random_string(8)}"
-            process = start_celery_worker(worker_name)
-            if process:
-                workers.append(process)
+        # 启动 worker
+        worker_name = f"agent-{generate_random_string(8)}"
+        process = start_celery_worker(worker_name)
+        if process:
+            workers.append(process)
         
-        print(f"\n总共启动了 {len(workers)} 个 worker")
-        print("按 Ctrl+C 停止所有 worker")
+        logger.info(f"\nWorker 已启动")
+        logger.info("按 Ctrl+C 停止所有 worker")
         
         # 等待所有进程
         for worker in workers:
             worker.wait()
             
     except KeyboardInterrupt:
-        print("\n正在停止所有 worker...")
+        logger.info("\n正在停止所有 worker...")
         for worker in workers:
             if worker and worker.poll() is None:
                 worker.terminate()
-        print("所有 worker 已停止")
+        logger.info("所有 worker 已停止")
         
     except Exception as e:
-        print(f"发生错误: {str(e)}")
+        logger.error(f"发生错误: {str(e)}")
         # 确保清理所有进程
         for worker in workers:
             if worker and worker.poll() is None:

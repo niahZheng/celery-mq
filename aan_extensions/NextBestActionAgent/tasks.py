@@ -115,16 +115,17 @@ def process_transcript(self, topic, message):
                                     }
                                 })
                                 celeryTopic = f"agent-assist/{client_id}/nextbestaction"
-                                self.sio.emit(
-                                        "celeryMessage",
-                                        {
-                                            "payloadString": celeryMessage,
-                                            "destinationName": celeryTopic,
-                                            'agent_id': message_data['agent_id']
-                                        },
-                                        namespace="/celery",
+                                # self.sio.emit(
+                                #         "celeryMessage",
+                                #         {
+                                #             "payloadString": celeryMessage,
+                                #             "destinationName": celeryTopic,
+                                #             'agent_id': message_data['agent_id']
+                                #         },
+                                #         namespace="/celery",
                                         
-                                )
+                                # )
+                                print("emit_socketio")
                     elif last_transcript['source'] == 'internal':
                         #actions = json.loads(self.redis_client.lindex(client_id + '_nba_actions', -1) or "[]")
                         actions = self.redis_client.lrange(client_id + '_nba_actions', 0, -1) or []

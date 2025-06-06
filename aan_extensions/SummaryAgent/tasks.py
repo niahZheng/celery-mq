@@ -64,16 +64,17 @@ def process_transcript(self, topic, message):
                                     }
                                 )
                                 try:
-                                    self.sio.emit(
-                                        "celeryMessage",
-                                        {
-                                            "payloadString": summary_message,
-                                            "destinationName": summary_topic,
-                                            'agent_id': message_data['agent_id']
-                                        },
-                                        namespace="/celery",
+                                    # self.sio.emit(
+                                    #     "celeryMessage",
+                                    #     {
+                                    #         "payloadString": summary_message,
+                                    #         "destinationName": summary_topic,
+                                    #         'agent_id': message_data['agent_id']
+                                    #     },
+                                    #     namespace="/celery",
                                         
-                                    )
+                                    # )
+                                    print("emit_socketio")
                                 except Exception as e:
                                     print(f"Error publishing extracted entities: {e}")
         except Exception as e:
