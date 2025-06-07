@@ -56,8 +56,8 @@ def start_celery_worker(worker_name: str) -> subprocess.Popen:
             "--loglevel=INFO",  # 改为 INFO 级别
             f"--hostname={worker_name}",
             "--pool=solo",
-            # 监听所有队列
-            "-Q", "dispatcher,transcription,nextbestaction,cache,summary",
+            # 监听所有队列，包括 celery
+            "-Q", "celery,dispatcher,transcription,nextbestaction,cache,summary",
             "--events",  # 启用事件监控
             "--concurrency=1",  # 限制并发数
             "--without-gossip",  # 禁用 gossip
