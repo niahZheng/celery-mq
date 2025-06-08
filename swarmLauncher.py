@@ -1,130 +1,33 @@
 import random
 import string
 import subprocess
-import sys
-import os
-import threading
-import logging
-import warnings
-from typing import List
+import celery
 
-# 配置警告过滤
-warnings.filterwarnings('ignore', category=SyntaxWarning)
-warnings.filterwarnings('ignore', category=UserWarning, module='pkg_resources')
-warnings.filterwarnings('ignore', category=UserWarning, module='opentelemetry.instrumentation.dependencies')
-
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-def generate_random_string(length: int) -> str:
-    """生成指定长度的随机字符串"""
+# Define a function to generate a random string of characters
+def generate_random_string(length):
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for _ in range(length))
 
-def log_output(process: subprocess.Popen, worker_name: str):
-    """实时显示进程的输出"""
-    while True:
-        output = process.stdout.readline()
-        if output == '' and process.poll() is not None:
-            break
-        if output:
-            print(f"[{worker_name}] {output.strip()}")
-    
-    # 检查是否有错误输出
-    error = process.stderr.readline()
-    if error:
-        print(f"[{worker_name}] ERROR: {error.strip()}")
+# Prefix for the worker name
+worker_name_prefix = "agent-"
 
-def start_celery_worker(worker_name: str, queue_name: str) -> subprocess.Popen:
-    """启动一个 Celery worker 进程"""
-    try:
-        # 设置环境变量
-        env = os.environ.copy()
-        env['CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP'] = 'true'
-        env['CELERY_LOG_LEVEL'] = 'INFO'
-        env['PYTHONWARNINGS'] = 'ignore'
-        
-        # 构建 Celery worker 命令
-        cmd = [
-            "celery",
-            "-A", "celery_worker",
-            "worker",
-            "--loglevel=INFO",
-            f"--hostname={worker_name}",
-            "--pool=prefork",  # 使用 prefork 池
-            f"-Q", f"{queue_name}",  # 只监听特定队列
-            "--concurrency=4",  # 每个 worker 4个进程
-            "--prefetch-multiplier=1",  # 限制预取数量
-            "--without-gossip",  # 禁用 gossip
-            "--without-mingle",  # 禁用 mingle
-            "--without-heartbeat"  # 禁用心跳
-        ]
-        
-        logger.info(f"Starting worker {worker_name} for queue {queue_name} with command: {' '.join(cmd)}")
-        
-        # 启动进程
-        process = subprocess.Popen(
-            cmd,
-            stdout=None,
-            stderr=None,
-            text=True,
-            bufsize=1,
-            universal_newlines=True,
-            env=env
-        )
-        
-        return process
-        
-    except Exception as e:
-        logger.error(f"❌ 启动 worker {worker_name} 失败: {str(e)}")
-        return None
+# Generate a random suffix for the worker name
+random_suffix = generate_random_string(8)
 
-def main():
-    # 工作进程列表
-    workers: List[subprocess.Popen] = []
-    
-    try:
-        # 定义每个 worker 的队列
-        worker_queues = {
-            'transcription': 'transcription',  # 转写任务
-            'dispatcher': 'dispatcher',        # 分发任务
-            'nextbestaction': 'nextbestaction', # 下一步行动任务
-            'cache': 'cache',                  # 缓存任务
-            'summary': 'summary'               # 总结任务
-        }
-        
-        # 启动专门的 worker
-        for queue_name, queue in worker_queues.items():
-            worker_name = f"agent-{queue_name}-{generate_random_string(8)}"
-            process = start_celery_worker(worker_name, queue)
-            if process:
-                workers.append(process)
-                logger.info(f"✅ Worker {worker_name} 已启动 (PID: {process.pid})")
-        
-        logger.info(f"\n已启动 {len(workers)} 个专门的 worker")
-        logger.info("按 Ctrl+C 停止所有 worker")
-        
-        # 等待所有进程
-        for worker in workers:
-            worker.wait()
-            
-    except KeyboardInterrupt:
-        logger.info("\n正在停止所有 worker...")
-        for worker in workers:
-            if worker and worker.poll() is None:
-                worker.terminate()
-        logger.info("所有 worker 已停止")
-        
-    except Exception as e:
-        logger.error(f"发生错误: {str(e)}")
-        # 确保清理所有进程
-        for worker in workers:
-            if worker and worker.poll() is None:
-                worker.terminate()
+# Concatenate the prefix and random suffix to create the worker name
+worker_name = worker_name_prefix + random_suffix
 
-if __name__ == "__main__":
-    main()
+# Windows development environment (commented out)
+# subprocess.Popen(f"celery -A celery_worker worker --loglevel=INFO --pool=solo --hostname={worker_name_prefix + generate_random_string(8)}", shell=True)
+
+# Azure Premium environment configuration
+# Using prefork pool with optimized settings for Premium tier
+subprocess.Popen(
+    f"celery -A celery_worker worker "
+    f"--loglevel=INFO "
+    f"--concurrency=8 "  # Premium tier can handle more concurrent workers
+    f"--max-tasks-per-child=1000 "  # Restart worker after 1000 tasks to prevent memory leaks
+    f"--max-memory-per-child=512000 "  # Restart worker if memory exceeds 512MB
+    f"--hostname={worker_name_prefix + generate_random_string(8)}",
+    shell=True
+)
