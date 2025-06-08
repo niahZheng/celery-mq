@@ -11,6 +11,9 @@ from opentelemetry.trace import SpanKind
 
 logger = logging.getLogger(__name__)
 
+# 存储 actions 的字典
+actions = {}
+
 class colors:
     OKGREEN = '\033[92m'
     OKBLUE = '\033[94m'
@@ -95,7 +98,8 @@ def process_transcript(self, topic, message):
                         nba_length = self.redis_client.llen(client_id + '_nba_actions')
                         print(f"nba_length {nba_length}")
                         if nba_length == 0:
-                            action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
+                            # action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
+
                             logging.info(f"Generated action for session {client_id}: {action}")
                             if action and action !="noresponse":
                                 # since actions are distributed, maybe this action_id thing is inefficient?
@@ -106,25 +110,33 @@ def process_transcript(self, topic, message):
                                 self.redis_client.rpush(client_id + '_nba_actions', json.dumps(action_payload) )
                                 # emit messages to UI
                                 #publish_action(client, client_id, action, action_id,options)
-                                celeryMessage = json.dumps({
-                                    "type": "new_action",
-                                    "parameters": {
-                                        "text": action,
-                                        "action_id": action_id,
-                                        "options": options 
-                                    }
-                                })
+                                # celeryMessage = json.dumps({
+                                #     "type": "new_action",
+                                #     "parameters": {
+                                #         "text": action,
+                                #         "action_id": action_id,
+                                #         "options": options 
+                                #     }
+                                # })
+                                celeryMessage = json.stringify({
+                                                    "type": "new_action",
+                                                    "parameters": {
+                                                        "text": "Do something",
+                                                        "action_id": "action789",
+                                                        "options": ["option1", "option2"]
+                                                    }
+                                                })
                                 celeryTopic = f"agent-assist/{client_id}/nextbestaction"
-                                # self.sio.emit(
-                                #         "celeryMessage",
-                                #         {
-                                #             "payloadString": celeryMessage,
-                                #             "destinationName": celeryTopic,
-                                #             'agent_id': message_data['agent_id']
-                                #         },
-                                #         namespace="/celery",
+                                self.sio.emit(
+                                        "celeryMessage",
+                                        {
+                                            "payloadString": celeryMessage,
+                                            "destinationName": celeryTopic,
+                                            'conversationid': message_data['agent_id']
+                                        },
+                                        namespace="/celery",
                                         
-                                # )
+                                )
                                 print("emit_socketio")
                     elif last_transcript['source'] == 'internal':
                         #actions = json.loads(self.redis_client.lindex(client_id + '_nba_actions', -1) or "[]")

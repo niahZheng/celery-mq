@@ -53,7 +53,7 @@ def process_transcript(self, topic, message):
                         with trace.get_tracer(__name__).start_as_current_span(
                             "summarize"):
                             # new_summary = summarize(transcription_text)
-                            new_summary = "This is a test summary"
+                            new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"
 
                             if new_summary:
                                 summary_topic = f"agent-assist/{client_id}/summarization"
@@ -64,16 +64,16 @@ def process_transcript(self, topic, message):
                                     }
                                 )
                                 try:
-                                    # self.sio.emit(
-                                    #     "celeryMessage",
-                                    #     {
-                                    #         "payloadString": summary_message,
-                                    #         "destinationName": summary_topic,
-                                    #         'agent_id': message_data['agent_id']
-                                    #     },
-                                    #     namespace="/celery",
+                                    self.sio.emit(
+                                        "celeryMessage",
+                                        {
+                                            "payloadString": summary_message,
+                                            "destinationName": summary_topic,
+                                            'agent_id': message_data['agent_id']
+                                        },
+                                        namespace="/celery",
                                         
-                                    # )
+                                    )
                                     print("emit_socketio")
                                 except Exception as e:
                                     print(f"Error publishing extracted entities: {e}")

@@ -42,7 +42,7 @@ def process_transcript(self,topic, message):
                 print("emit_socketio")
                 #self.await_sio_emit('celeryMessage', {'payloadString': message, 'destinationName': topic}, namespace='/celery')
 
-                # self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic, 'agent_id': message_data['agent_id']}, namespace='/celery')
+                self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic, 'agent_id': message_data['agent_id']}, namespace='/celery')
                 # self.redis_client.append_to_list_json()
         except Exception as e:
             print(e)
