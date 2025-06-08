@@ -86,8 +86,10 @@ app.conf.result_expires = 3600  # 1 hour
 app.conf.worker_prefetch_multiplier = 1  # 确保任务被正确处理
 app.conf.task_ignore_result = True  # 忽略任务结果，因为我们不需要存储结果
 
-# Redis backend 配置
-app.conf.redis_backend_use_ssl = True
+# Worker 配置
+app.conf.worker_concurrency = os.getenv('CELERY_WORKER_CONCURRENCY', 4)  # 默认4个进程
+app.conf.worker_max_tasks_per_child = 1000  # 每个进程处理1000个任务后重启
+app.conf.worker_max_memory_per_child = 200000  # 每个进程最大内存使用量（KB）
 
 # 配置队列
 app.conf.task_queues = {
