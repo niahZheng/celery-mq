@@ -17,17 +17,15 @@ random_suffix = generate_random_string(8)
 # Concatenate the prefix and random suffix to create the worker name
 worker_name = worker_name_prefix + random_suffix
 
-# Windows development environment (commented out)
-subprocess.Popen(f"celery -A celery_worker worker --loglevel=INFO --pool=solo --hostname={worker_name_prefix + generate_random_string(8)}", shell=True)
-
-# Azure Premium environment configuration
-# Using prefork pool with optimized settings for Premium tier
-# subprocess.Popen(
-#     f"celery -A celery_worker worker "
-#     f"--loglevel=INFO "
-#     f"--concurrency=8 "  # Premium tier can handle more concurrent workers
-#     f"--max-tasks-per-child=1000 "  # Restart worker after 1000 tasks to prevent memory leaks
-#     f"--max-memory-per-child=512000 "  # Restart worker if memory exceeds 512MB
-#     f"--hostname={worker_name_prefix + generate_random_string(8)}",
-#     shell=True
-# )
+# Azure App Service environment configuration
+# 使用 2>&1 将 stderr 重定向到 stdout，这样所有日志都会显示在 Log Stream 中
+subprocess.Popen(
+    f"celery -A celery_worker worker "
+    f"--loglevel=INFO "
+    f"--pool=solo "
+    f"--max-tasks-per-child=1000 "
+    f"--max-memory-per-child=512000 "
+    f"--hostname={worker_name_prefix + generate_random_string(8)} "
+    f"2>&1",  # 关键修改：重定向 stderr 到 stdout
+    shell=True
+)
