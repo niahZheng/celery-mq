@@ -66,7 +66,7 @@ def init_celery_tracing(*args, **kwargs):
 app = Celery(
     "agent_assist_neo",
     broker=os.getenv("AAN_CELERY_BROKER_URI", "amqp://rxadmin:rxadmin321@20.39.130.141:5672"),
-    backend=os.getenv("AAN_CELERY_BACKEND_URI", f"rediss://default:{os.getenv('REDIS_PASSWORD')}@rx-redis.redis.cache.windows.net:6380/1"),
+    # backend=os.getenv("AAN_CELERY_BACKEND_URI", f"rediss://default:{os.getenv('REDIS_PASSWORD')}@rx-redis.redis.cache.windows.net:6380/1"),
     include=['aan_extensions.TranscriptionAgent.tasks', 
              'aan_extensions.DispatcherAgent.tasks',
              'aan_extensions.NextBestActionAgent.tasks',
@@ -86,17 +86,8 @@ app.conf.result_expires = 3600  # 1 hour
 app.conf.worker_prefetch_multiplier = 1  # 确保任务被正确处理
 app.conf.task_ignore_result = True  # 忽略任务结果，因为我们不需要存储结果
 
-# Redis broker 配置
-app.conf.broker_use_ssl = {
-    'ssl_cert_reqs': 'required',
-    'ssl_ca_certs': None
-}
-
 # Redis backend 配置
-app.conf.redis_backend_use_ssl = {
-    'ssl_cert_reqs': 'required',
-    'ssl_ca_certs': None
-}
+app.conf.redis_backend_use_ssl = True
 
 # 配置队列
 app.conf.task_queues = {
