@@ -48,20 +48,16 @@ def main():
             transports=['websocket']
         )
         
-        # 发送测试消息
-        test_message = {
-            "payloadString": "Test message",
-            "destinationName": "test/topic",
-            "agent_id": "test_agent"
-        }
+        print("Connected! Listening for messages...")
         
-        print("Sending test message...")
-        sio.emit('celeryMessage', test_message, namespace='/celery')
-        
-        # 等待一段时间以接收响应
-        print("Waiting for response...")
-        time.sleep(10)
-        
+        # 保持程序运行，持续监听消息
+        while True:
+            try:
+                time.sleep(1)  # 避免 CPU 使用率过高
+            except KeyboardInterrupt:
+                print("\nStopping listener...")
+                break
+            
     except Exception as e:
         print(f"Error: {e}")
     finally:

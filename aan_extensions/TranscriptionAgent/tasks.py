@@ -42,7 +42,18 @@ def process_transcript(self,topic, message):
                 print("emit_socketio")
                 #self.await_sio_emit('celeryMessage', {'payloadString': message, 'destinationName': topic}, namespace='/celery')
 
-                self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic, 'agent_id': message_data['agent_id']}, namespace='/celery')
+                # self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic, 'agent_id': message_data['agent_id']}, namespace='/celery')
+                 # 构建发送数据，使用 get 方法安全地获取 agent_id
+                emit_data = {
+                    'payloadString': message,
+                    'destinationName': topic
+                }
+                
+                # 如果存在 conversation_id，则添加到发送数据中
+                if 'conversation_id' in message_data:
+                    emit_data['conversationid'] = message_data['conversation_id']
+                
+                self.sio.emit('celeryMessage', emit_data, namespace='/celery')
                 # self.redis_client.append_to_list_json()
         except Exception as e:
             print(e)

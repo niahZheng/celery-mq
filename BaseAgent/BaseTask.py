@@ -112,11 +112,11 @@ class BaseTask(Task):
 
     def extract_agent_id(self, message):
         """
-        Get the agent_id from an agent assist message
+        Get the conversation_id from an agent assist message
         """
         try:
             message_data = json.loads(message)
-            agent_id = message_data.get("agent_id", "")
-            return agent_id
+            conversation_id = message_data.get("conversation_id", "")
+            return conversation_id
         except (json.JSONDecodeError, AttributeError):
             return None

@@ -118,21 +118,21 @@ def process_transcript(self, topic, message):
                                 #         "options": options 
                                 #     }
                                 # })
-                                celeryMessage = json.stringify({
-                                                    "type": "new_action",
-                                                    "parameters": {
-                                                        "text": "Do something",
-                                                        "action_id": "action789",
-                                                        "options": ["option1", "option2"]
-                                                    }
-                                                })
+                                celeryMessage = json.dumps({
+                                    "type": "new_action",
+                                    "parameters": {
+                                        "text": "Do something",
+                                        "action_id": "action789",
+                                        "options": ["option1", "option2"]
+                                    }
+                                })
                                 celeryTopic = f"agent-assist/{client_id}/nextbestaction"
                                 self.sio.emit(
                                         "celeryMessage",
                                         {
                                             "payloadString": celeryMessage,
                                             "destinationName": celeryTopic,
-                                            'conversationid': message_data['agent_id']
+                                            'conversationid': message_data['conversation_id']
                                         },
                                         namespace="/celery",
                                         
@@ -161,7 +161,7 @@ def process_transcript(self, topic, message):
                                     {
                                         "payloadString": celeryMessage,
                                         "destinationName": celeryTopic,
-                                        'agent_id': message_data['agent_id']
+                                        'conversationid': message_data['conversation_id']
                                     },
                                     namespace="/celery",
                                     
@@ -200,7 +200,7 @@ def process_transcript(self, topic, message):
                                     {
                                         "payloadString": celeryMessage,
                                         "destinationName": celeryTopic,
-                                        'agent_id': message_data['agent_id']
+                                        'conversationid': message_data['conversation_id']
                                     },
                                     namespace="/celery",
                                     
