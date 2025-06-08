@@ -31,12 +31,18 @@ class BaseTask(Task):
     @property
     def redis_client(self):
         if self._redis_client is None:
-            self._redis_client = redis.StrictRedis(
-                host=os.getenv("AAN_REDIS_HOST", "localhost"),
-                port=os.getenv("AAN_REDIS_PORT", 6379),
-                db=os.getenv("AAN_REDIS_DB_INDEX", 2),
-            )
-            print("Starting Redis client")
+            try:
+                self._redis_client = redis.StrictRedis(
+                    host=os.getenv("AAN_REDIS_HOST", "rx-redis.redis.cache.windows.net"),
+                    port=int(os.getenv("AAN_REDIS_PORT", 6380)),
+                    db=int(os.getenv("AAN_REDIS_DB_INDEX", 0)),
+                    ssl=True,
+                    ssl_cert_reqs=None
+                )
+                print("Starting Redis client")
+            except Exception as e:
+                print(f"Redis connection error: {e}")
+                self._redis_client = None
         return self._redis_client
 
     def create_json(self, key, value):

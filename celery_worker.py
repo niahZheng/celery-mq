@@ -19,8 +19,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-DISABLE_TRACING = os.getenv('DISABLE_TRACING', False) == 'true'
-TRACING_COLLECTOR_ENDPOINT = os.getenv('TRACING_COLLECTOR_ENDPOINT', 'jaeger')
+DISABLE_TRACING = os.getenv('DISABLE_TRACING', 'true') == 'true'  # 默认禁用追踪
+TRACING_COLLECTOR_ENDPOINT = os.getenv('TRACING_COLLECTOR_ENDPOINT', 'localhost')
 TRACING_COLLECTOR_PORT = os.getenv('TRACING_COLLECTOR_PORT', '14268')
 
 # 任务信号处理
@@ -42,21 +42,21 @@ def task_failure_handler(sender=None, exception=None, **kwargs):
 
 @worker_process_init.connect(weak=False)
 def init_celery_tracing(*args, **kwargs):
-    if os.getenv("TELEMETRY", ''):
-        CeleryInstrumentor().instrument()
-        print("CeleryInstrumentation Enabled")
-    trace.set_tracer_provider(TracerProvider())
+    if not DISABLE_TRACING:
+        try:
+            CeleryInstrumentor().instrument()
+            print("CeleryInstrumentation Enabled")
+            trace.set_tracer_provider(TracerProvider())
 
-    if DISABLE_TRACING:
-        span_processor = BatchSpanProcessor(ConsoleSpanExporter())
-    else:
-        print("JaegerExporter Enabled")
-        jaeger_exporter = JaegerExporter(
-            collector_endpoint=f'http://{TRACING_COLLECTOR_ENDPOINT}:{TRACING_COLLECTOR_PORT}/api/traces?format=jaeger.thrift',
-        )
-        span_processor = BatchSpanProcessor(jaeger_exporter)
-
-    trace.get_tracer_provider().add_span_processor(span_processor)
+            jaeger_exporter = JaegerExporter(
+                collector_endpoint=f'http://{TRACING_COLLECTOR_ENDPOINT}:{TRACING_COLLECTOR_PORT}/api/traces?format=jaeger.thrift',
+            )
+            span_processor = BatchSpanProcessor(jaeger_exporter)
+            trace.get_tracer_provider().add_span_processor(span_processor)
+            print("JaegerExporter Enabled")
+        except Exception as e:
+            print(f"Failed to initialize tracing: {e}")
+            DISABLE_TRACING = True
 
 app = Celery(
     "agent_assist_neo",
