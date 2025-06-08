@@ -39,35 +39,34 @@ def log_output(process: subprocess.Popen, worker_name: str):
     if error:
         print(f"[{worker_name}] ERROR: {error.strip()}")
 
-def start_celery_worker(worker_name: str) -> subprocess.Popen:
+def start_celery_worker(worker_name: str, queue_name: str) -> subprocess.Popen:
     """启动一个 Celery worker 进程"""
     try:
         # 设置环境变量
         env = os.environ.copy()
         env['CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP'] = 'true'
-        env['CELERY_LOG_LEVEL'] = 'INFO'  # 改为 INFO 级别
-        env['PYTHONWARNINGS'] = 'ignore'  # 忽略 Python 警告
+        env['CELERY_LOG_LEVEL'] = 'INFO'
+        env['PYTHONWARNINGS'] = 'ignore'
         
         # 构建 Celery worker 命令
         cmd = [
             "celery",
             "-A", "celery_worker",
             "worker",
-            "--loglevel=INFO",  # 改为 INFO 级别
+            "--loglevel=INFO",
             f"--hostname={worker_name}",
-            "--pool=solo",
-            # 监听所有队列，包括 celery
-            "-Q", "celery,dispatcher,transcription,nextbestaction,cache,summary",
-            "--events",  # 启用事件监控
-            "--concurrency=1",  # 限制并发数
+            "--pool=prefork",  # 使用 prefork 池
+            f"-Q", f"{queue_name}",  # 只监听特定队列
+            "--concurrency=4",  # 每个 worker 4个进程
+            "--prefetch-multiplier=1",  # 限制预取数量
             "--without-gossip",  # 禁用 gossip
             "--without-mingle",  # 禁用 mingle
             "--without-heartbeat"  # 禁用心跳
         ]
         
-        logger.info(f"Starting worker {worker_name} with command: {' '.join(cmd)}")
+        logger.info(f"Starting worker {worker_name} for queue {queue_name} with command: {' '.join(cmd)}")
         
-        # 启动进程，不捕获输出
+        # 启动进程
         process = subprocess.Popen(
             cmd,
             stdout=None,
@@ -78,7 +77,6 @@ def start_celery_worker(worker_name: str) -> subprocess.Popen:
             env=env
         )
         
-        logger.info(f"✅ Worker {worker_name} 已启动 (PID: {process.pid})")
         return process
         
     except Exception as e:
@@ -90,13 +88,24 @@ def main():
     workers: List[subprocess.Popen] = []
     
     try:
-        # 启动 worker
-        worker_name = f"agent-{generate_random_string(8)}"
-        process = start_celery_worker(worker_name)
-        if process:
-            workers.append(process)
+        # 定义每个 worker 的队列
+        worker_queues = {
+            'transcription': 'transcription',  # 转写任务
+            'dispatcher': 'dispatcher',        # 分发任务
+            'nextbestaction': 'nextbestaction', # 下一步行动任务
+            'cache': 'cache',                  # 缓存任务
+            'summary': 'summary'               # 总结任务
+        }
         
-        logger.info(f"\nWorker 已启动")
+        # 启动专门的 worker
+        for queue_name, queue in worker_queues.items():
+            worker_name = f"agent-{queue_name}-{generate_random_string(8)}"
+            process = start_celery_worker(worker_name, queue)
+            if process:
+                workers.append(process)
+                logger.info(f"✅ Worker {worker_name} 已启动 (PID: {process.pid})")
+        
+        logger.info(f"\n已启动 {len(workers)} 个专门的 worker")
         logger.info("按 Ctrl+C 停止所有 worker")
         
         # 等待所有进程
