@@ -23,10 +23,10 @@ worker_name = worker_name_prefix + random_suffix
 process = subprocess.Popen(
     f"celery -A celery_worker worker --loglevel=INFO --pool=solo --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
     shell=True,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT,
-    universal_newlines=True,
-    bufsize=1
+    stdout=subprocess.PIPE,  # 捕获标准输出
+    stderr=subprocess.STDOUT,  # 将标准错误重定向到标准输出
+    universal_newlines=True,  # 使用文本模式
+    bufsize=1  # 行缓冲
 )
 
 # 实时读取并输出日志
@@ -34,7 +34,7 @@ def log_output(process):
     for line in iter(process.stdout.readline, ''):
         if line:
             print(line.strip())
-            sys.stdout.flush()
+            sys.stdout.flush()  # 确保立即输出
 
 # 启动日志输出线程
 import threading
