@@ -12,6 +12,9 @@ from celery.utils.log import get_task_logger
 from dotenv import load_dotenv
 import os
 
+# 加载环境变量
+load_dotenv()
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
@@ -19,7 +22,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-DISABLE_TRACING = os.getenv('DISABLE_TRACING', 'true') == 'true'  # 默认禁用追踪
+# 全局变量
+DISABLE_TRACING = os.getenv('DISABLE_TRACING', 'true') == 'true'
 TRACING_COLLECTOR_ENDPOINT = os.getenv('TRACING_COLLECTOR_ENDPOINT', 'localhost')
 TRACING_COLLECTOR_PORT = os.getenv('TRACING_COLLECTOR_PORT', '14268')
 
@@ -42,6 +46,7 @@ def task_failure_handler(sender=None, exception=None, **kwargs):
 
 @worker_process_init.connect(weak=False)
 def init_celery_tracing(*args, **kwargs):
+    global DISABLE_TRACING
     if not DISABLE_TRACING:
         try:
             CeleryInstrumentor().instrument()

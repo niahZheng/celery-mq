@@ -32,12 +32,12 @@ class BaseTask(Task):
     def redis_client(self):
         if self._redis_client is None:
             try:
-                self._redis_client = redis.StrictRedis(
-                    host=os.getenv("AAN_REDIS_HOST", "rx-redis.redis.cache.windows.net"),
-                    port=int(os.getenv("AAN_REDIS_PORT", 6380)),
-                    db=int(os.getenv("AAN_REDIS_DB_INDEX", 0)),
+                redis_url = f"rediss://default:{os.getenv('REDIS_PASSWORD', '')}@rx-redis.redis.cache.windows.net:6380/1"
+                self._redis_client = redis.from_url(
+                    redis_url,
+                    decode_responses=True,
                     ssl=True,
-                    ssl_cert_reqs=None
+                    ssl_cert_reqs='required'
                 )
                 print("Starting Redis client")
             except Exception as e:

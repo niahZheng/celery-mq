@@ -64,19 +64,35 @@ def process_transcript(self, topic, message):
                                     }
                                 )
                                 try:
+                                    print(f"Sending Socket.IO message to {summary_topic}")
+                                    print(f"Message content: {summary_message}")
+                                    
+                                    # 检查 Socket.IO 连接状态
+                                    if not self.sio:
+                                        print("Socket.IO client is None")
+                                        return
+                                    
+                                    if not self.sio.connected:
+                                        print("Socket.IO client is not connected")
+                                        return
+                                    
+                                    # 发送消息
                                     self.sio.emit(
                                         "celeryMessage",
                                         {
                                             "payloadString": summary_message,
                                             "destinationName": summary_topic,
-                                            'agent_id': message_data['agent_id']
+                                            'agent_id': message_data.get('agent_id', 'unknown')
                                         },
                                         namespace="/celery",
-                                        
+                                        callback=lambda *args: print("Message sent successfully:", args)
                                     )
-                                    print("emit_socketio")
+                                    print("Socket.IO message sent")
                                 except Exception as e:
-                                    print(f"Error publishing extracted entities: {e}")
+                                    print(f"Error sending Socket.IO message: {str(e)}")
+                                    print(f"Error type: {type(e)}")
+                                    import traceback
+                                    print(f"Error traceback: {traceback.format_exc()}")
         except Exception as e:
             print(e)
     # the return result is stored in the celery backend
