@@ -99,7 +99,7 @@ def process_transcript(self, topic, message):
                         print(f"nba_length {nba_length}")
                         if nba_length == 0:
                             # action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
-
+                            action, options = "Do something", ["option1", "option2"]
                             logging.info(f"Generated action for session {client_id}: {action}")
                             if action and action !="noresponse":
                                 # since actions are distributed, maybe this action_id thing is inefficient?
