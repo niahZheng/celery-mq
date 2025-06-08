@@ -15,12 +15,17 @@ class BaseTask(Task):
     @property
     def sio(self):
         if self._sio is None:
-            self._sio = socketio.Client(logger=True, engineio_logger=True)
-            self._sio.connect(
-                os.getenv("ANN_SOCKETIO_SERVER", "wss://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"),
-                namespaces=["/celery"],
-            )
-            print("Socketio client initialized")
+            try:
+                self._sio = socketio.Client(logger=True, engineio_logger=True)
+                self._sio.connect(
+                    os.getenv("ANN_SOCKETIO_SERVER", "wss://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"),
+                    namespaces=["/celery"],
+                    wait_timeout=10
+                )
+                print("Socketio client initialized")
+            except Exception as e:
+                print(f"Socket.IO connection error: {e}")
+                self._sio = None
         return self._sio
 
     @property
