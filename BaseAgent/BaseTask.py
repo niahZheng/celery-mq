@@ -35,9 +35,7 @@ class BaseTask(Task):
                 redis_url = f"rediss://default:{os.getenv('REDIS_PASSWORD', '')}@rx-redis.redis.cache.windows.net:6380/1"
                 self._redis_client = redis.from_url(
                     redis_url,
-                    decode_responses=True,
-                    ssl=True,
-                    ssl_cert_reqs='required'
+                    decode_responses=True
                 )
                 print("Starting Redis client")
             except Exception as e:
