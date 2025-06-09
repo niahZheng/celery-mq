@@ -16,11 +16,38 @@ class BaseTask(Task):
     def sio(self):
         if self._sio is None:
             try:
-                self._sio = socketio.Client(logger=True, engineio_logger=True)
+                self._sio = socketio.Client(
+                    logger=True, 
+                    engineio_logger=True,
+                    reconnection=True,
+                    reconnection_attempts=5,
+                    reconnection_delay=1000
+                )
+
+                @self._sio.event
+                def connect():
+                    print("Socket.IO connected to server")
+                    self._sio_status = True
+
+                @self._sio.event
+                def connect_error(data):
+                    print(f"Socket.IO connection error: {data}")
+                    self._sio_status = False
+
+                @self._sio.event
+                def disconnect():
+                    print("Socket.IO disconnected from server")
+                    self._sio_status = False
+
+                @self._sio.event
+                def celeryMessage(data):
+                    print(f"Received Socket.IO message: {data}")
+
                 self._sio.connect(
-                    os.getenv("ANN_SOCKETIO_SERVER", "wss://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"),
+                    os.getenv("ANN_SOCKETIO_SERVER", "https://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"),
                     namespaces=["/celery"],
-                    wait_timeout=10
+                    wait_timeout=10,
+                    transports=['websocket']
                 )
                 print("Socketio client initialized")
             except Exception as e:

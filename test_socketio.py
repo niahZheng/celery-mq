@@ -38,7 +38,7 @@ def error(data):
 def main():
     try:
         # 连接到服务器
-        server_url = "wss://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"
+        server_url = "https://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"
         print(f"Connecting to {server_url}...")
         
         sio.connect(

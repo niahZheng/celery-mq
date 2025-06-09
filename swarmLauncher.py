@@ -26,7 +26,9 @@ process = subprocess.Popen(
     stdout=subprocess.PIPE,  # 捕获标准输出
     stderr=subprocess.STDOUT,  # 将标准错误重定向到标准输出
     universal_newlines=True,  # 使用文本模式
-    bufsize=1  # 行缓冲
+    bufsize=1,  # 行缓冲
+    encoding='utf-8',  # 使用 UTF-8 编码
+    errors='replace'  # 替换无法解码的字符
 )
 
 # 实时读取并输出日志

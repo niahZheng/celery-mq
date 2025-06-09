@@ -113,8 +113,10 @@ def check_action_completion(session_id, agent_message,actions):
     return completed_actions_idx, completed_actions_id
 
 def tokenize(text):
-    sentences = sent_tokenize(text)
-    words = word_tokenize(text)
+    # sentences = sent_tokenize(text)
+    # words = word_tokenize(text)
+    sentences = [text]
+    words = [text]
     return sentences, words
 
 def calculate_similarity(text1, text2):
