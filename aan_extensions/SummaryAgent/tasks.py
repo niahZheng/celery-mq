@@ -37,6 +37,10 @@ def process_transcript(self, topic, message):
             client_id = self.extract_client_id(topic)
             print(f"client_id: {client_id}")
             message_data = json.loads(message)
+            print("\n=== Message Data ===")
+            print(json.dumps(message_data, indent=2, ensure_ascii=False))
+            print("===================\n")
+            
             with trace.get_tracer(__name__).start_as_current_span(
                 "redis_op"):
                 if client_id: #must have client_id, otherwise it is a session_start or end
@@ -82,7 +86,7 @@ def process_transcript(self, topic, message):
                                         {
                                             "payloadString": summary_message,
                                             "destinationName": summary_topic,
-                                            'agent_id': message_data.get('agent_id', 'unknown')
+                                            'conversationid': message_data['conversationid']
                                         },
                                         namespace="/celery",
                                         callback=lambda *args: print("Message sent successfully:", args)

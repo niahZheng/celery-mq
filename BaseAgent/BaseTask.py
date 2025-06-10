@@ -15,49 +15,22 @@ class BaseTask(Task):
     @property
     def sio(self):
         if self._sio is None:
-            try:
-                self._sio = socketio.Client(
-                    logger=True, 
-                    engineio_logger=True,
-                    reconnection=True,
-                    reconnection_attempts=5,
-                    reconnection_delay=1000
-                )
-
-                @self._sio.event
-                def connect():
-                    print("Socket.IO connected to server")
-                    self._sio_status = True
-
-                @self._sio.event
-                def connect_error(data):
-                    print(f"Socket.IO connection error: {data}")
-                    self._sio_status = False
-
-                @self._sio.event
-                def disconnect():
-                    print("Socket.IO disconnected from server")
-                    self._sio_status = False
-
-                @self._sio.event
-                def celeryMessage(data):
-                    print(f"Received Socket.IO message: {data}")
-
-                self._sio.connect(
-                    os.getenv("ANN_SOCKETIO_SERVER", "https://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"),
-                    namespaces=["/celery"],
-                    wait_timeout=10,
-                    transports=['websocket']
-                )
-                print("Socketio client initialized")
-            except Exception as e:
-                print(f"Socket.IO connection error: {e}")
-                self._sio = None
+            self._sio = socketio.Client(logger=False, engineio_logger=False)
+            self._sio.connect(
+                "http://localhost:8000",
+                namespaces=["/celery"],
+            )
+            print("===============================Socketio client initialized")
         return self._sio
 
     @property
     def redis_client(self):
         if self._redis_client is None:
+            # self._redis_client = redis.StrictRedis(
+            #     host=os.getenv("AAN_REDIS_HOST", "localhost"),
+            #     port=os.getenv("AAN_REDIS_PORT", 6379),
+            #     db=os.getenv("AAN_REDIS_DB_INDEX", 2),
+            # )
             try:
                 redis_url = f"rediss://default:{os.getenv('REDIS_PASSWORD', '')}@rx-redis.redis.cache.windows.net:6380/1"
                 self._redis_client = redis.from_url(
@@ -139,11 +112,11 @@ class BaseTask(Task):
 
     def extract_agent_id(self, message):
         """
-        Get the conversation_id from an agent assist message
+        Get the agent_id from an agent assist message
         """
         try:
             message_data = json.loads(message)
-            conversation_id = message_data.get("conversation_id", "")
-            return conversation_id
+            agent_id = message_data.get("agent_id", "")
+            return agent_id
         except (json.JSONDecodeError, AttributeError):
             return None

@@ -13,28 +13,26 @@ import os
 
 logger = logging.getLogger(__name__)
 
-DISABLE_TRACING = True  # 或者设置环境变量 DISABLE_TRACING=true
+DISABLE_TRACING = True  # 设置为 True 来禁用追踪
 TRACING_COLLECTOR_ENDPOINT = os.getenv('TRACING_COLLECTOR_ENDPOINT', 'jaeger')
 TRACING_COLLECTOR_PORT = os.getenv('TRACING_COLLECTOR_PORT', '14268')
 
 
 @worker_process_init.connect(weak=False)
 def init_celery_tracing(*args, **kwargs):
-    if os.getenv("TELEMETRY", ''):
+    if not DISABLE_TRACING and os.getenv("TELEMETRY", ''):
         CeleryInstrumentor().instrument()
         print("CeleryInstrumentation Enabled")
-    trace.set_tracer_provider(TracerProvider())
+        trace.set_tracer_provider(TracerProvider())
 
-    if DISABLE_TRACING:
-        span_processor = BatchSpanProcessor(ConsoleSpanExporter())
-    else:
         print("JaegerExporter Enabled")
         jaeger_exporter = JaegerExporter(
             collector_endpoint=f'http://{TRACING_COLLECTOR_ENDPOINT}:{TRACING_COLLECTOR_PORT}/api/traces?format=jaeger.thrift',
         )
         span_processor = BatchSpanProcessor(jaeger_exporter)
-
-    trace.get_tracer_provider().add_span_processor(span_processor)
+        trace.get_tracer_provider().add_span_processor(span_processor)
+    else:
+        print("Tracing is disabled")
 
 app = Celery(
     "agent_assist_neo",
