@@ -20,7 +20,7 @@ def send_test_message():
     test_message = {
         "type": "transcription",
         "parameters": {
-            "source": "internal",
+            "source": "external",
             "text": "so you're um already extended you're a pretire it will end on august 24 so you need to give us a call back before always 20 fourth to give us a feedback if you i mean what happened to the product if it didn't something you know it give you the benefits such in it but let's say uh you love the product you like the product you don't need to give us a call back then it will be automatically uh you will be receiving a not a bottle for your subscription and uh set up a call i heard that you're not you know um sure uh you're dilling about the price which is $83 and 8 right okay so what i can do for you is aside from extending the your pre trial for another 15 days i'm also giving you my employee discount which is 20 percent of the scott so instead of paying $83 and 8 sets going to pay only $67.04 how about that",
             "seq": None,
             "timestamp": 68.66

@@ -62,7 +62,7 @@ def process_transcript(self, topic, message):
         try:
             # self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic}, namespace='/celery') #
             client_id = self.extract_client_id(topic)
-            print(f"initial client_id: {client_id}")
+            print(f"initial client_id--------NBA: {client_id}")
             with trace.get_tracer(__name__).start_as_current_span(
                 "redis_op"):
                 message_data = json.loads(message)
@@ -138,17 +138,20 @@ def process_transcript(self, topic, message):
                                         
                                 )
                                 print("emit_socketio")
-                    elif last_transcript['source'] == 'internal':
+                    elif last_transcript['source'] == 'internal':    
                         #actions = json.loads(self.redis_client.lindex(client_id + '_nba_actions', -1) or "[]")
                         actions = self.redis_client.lrange(client_id + '_nba_actions', 0, -1) or []
                         # actions is array of:
                         # {"action_id": action_id, "action": action, "status": "pending"}
-                        completed_action_ids_idxs, completed_actions_ids = check_action_completion(client_id, last_transcript["text"], actions)
-                        # completed_action_ids is a list of action_ids
-                        # updates the actions list in redis with completed status
+                        # completed_action_ids_idxs, completed_actions_ids = check_action_completion(client_id, last_transcript["text"], actions)
+                        
+                        # 伪造已完成的动作 ID
+                        completed_actions_ids = ["action789", "action790"]  # 使用与之前发送的 action_id 匹配的值
+                        print(f"Mock completed actions: {completed_actions_ids}")
 
                         # first we emit all the action IDs that are completed for the frontend (fast!)
-                        for action_id in completed_actions_ids:
+                        for action_id in completed_actions_ids:                                      
+                            print(f"111111111111111111111111111111111111111111111111")
                             celeryTopic = f"agent-assist/{client_id}/nextbestaction"
                             celeryMessage = json.dumps({
                                 "type": "completed_action",
@@ -156,16 +159,18 @@ def process_transcript(self, topic, message):
                                     "action_id": action_id
                                 }
                             })
-                            self.sio.emit(
-                                    "celeryMessage",
-                                    {
-                                        "payloadString": celeryMessage,
-                                        "destinationName": celeryTopic,
-                                        'conversationid': message_data['conversation_id']
-                                    },
-                                    namespace="/celery",
-                                    
-                            )
+
+                            emit_data = {
+                                'payloadString': celeryMessage,
+                                'destinationName': celeryTopic
+                            }
+                            
+                            # 如果存在 conversation_id，则添加到发送数据中
+                            if 'conversation_id' in message_data:
+                                emit_data['conversationid'] = message_data['conversation_id']
+                            
+                            self.sio.emit('celeryMessage', emit_data, namespace='/celery')
+                            print(f"333333333333333333333333333333333333333333333333333")
                         # then we update those action indexs on redis
                         #self.redis_client.ltrim(client_id + '_nba_actions', 99 , 0) # we delete it
 

@@ -34,7 +34,10 @@ def process_transcript(self, topic, message):
         print(self.sio)
         try:
             # self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic}, namespace='/celery') #
-            client_id = self.extract_client_id(topic)
+            # client_id = self.extract_client_id(topic)
+            message_data = json.loads(message)
+            print(f"message_data----------------: {message_data}")
+            client_id = message_data['conversationid']
             print(f"client_id: {client_id}")
             message_data = json.loads(message)
             print("\n=== Message Data ===")
