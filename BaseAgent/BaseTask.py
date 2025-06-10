@@ -17,7 +17,7 @@ class BaseTask(Task):
         if self._sio is None:
             self._sio = socketio.Client(logger=False, engineio_logger=False)
             self._sio.connect(
-                "http://localhost:8000",
+                "https://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io",
                 namespaces=["/celery"],
             )
             print("===============================Socketio client initialized")
