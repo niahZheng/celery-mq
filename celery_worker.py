@@ -46,14 +46,5 @@ app = Celery(
              ]
 )
 
-app.conf.update(
-    task_exchanges={
-        'default': {
-            'type': 'direct',
-            'auto_delete': True  # 匹配现有参数
-        }
-    }
-)
-
 if __name__ == '__main__':
     app.start()
