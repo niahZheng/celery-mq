@@ -21,7 +21,7 @@ worker_name = worker_name_prefix + random_suffix
 
 # Start the Celery worker with the generated hostname
 process = subprocess.Popen(
-    f"celery -A celery_worker worker --loglevel=INFO --pool=prefork --concurrency=4 --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
+    f"celery -A celery_worker worker --loglevel=INFO --pool=prefork --concurrency=2 --queues=high_priority,default --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
     shell=True,
     stdout=subprocess.PIPE,  # 捕获标准输出
     stderr=subprocess.STDOUT,  # 将标准错误重定向到标准输出
