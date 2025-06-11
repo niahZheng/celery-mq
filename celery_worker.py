@@ -11,9 +11,6 @@ from celery.signals import worker_process_init
 from dotenv import load_dotenv
 import os
 
-# 导入 Celery 配置
-from celery_config import *
-
 logger = logging.getLogger(__name__)
 
 DISABLE_TRACING = True  # 设置为 True 来禁用追踪
@@ -47,6 +44,15 @@ app = Celery(
              'aan_extensions.CacheAgent.tasks',
              'aan_extensions.SummaryAgent.tasks',
              ]
+)
+
+app.conf.update(
+    task_exchanges={
+        'default': {
+            'type': 'direct',
+            'auto_delete': True  # 匹配现有参数
+        }
+    }
 )
 
 if __name__ == '__main__':
