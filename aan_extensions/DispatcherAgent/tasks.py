@@ -27,7 +27,9 @@ def process_transcript(self,topic, message):
                 
                 # Moving extraction to after CacheAgent since it needs full transcripts
                 # ExtractionAgent.tasks.process_transcript.s(topic,message).apply_async()
-                NextBestActionAgent.tasks.process_transcript.s(topic,message).apply_async()
+
+                ####comment for pending tasks
+                #NextBestActionAgent.tasks.process_transcript.s(topic,message).apply_async()
                 chained_tasks = chain(
                     CacheAgent.tasks.process_transcript.s(topic,message),
                    # NextBestActionAgent.tasks.process_transcript.si(topic,message),
