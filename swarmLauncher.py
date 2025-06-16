@@ -35,20 +35,6 @@ command = [
     f"--hostname={worker_name}"
 ]
 
-command = [
-    "celery", "-A", "celery_worker", "worker",
-    "--loglevel=INFO",
-    "--pool=eventlet",
-    "--concurrency=20",
-    "--max-tasks-per-child=1000",
-    "--max-memory-per-child=200000",  # 明确为 200MB
-    "--prefetch-multiplier=1",
-    "--without-gossip",
-    "--without-mingle",
-    "--without-heartbeat",
-    f"--hostname={worker_name}"
-]
-
 # Start the Celery worker with the generated hostname
 process = subprocess.Popen(
     #f"celery -A celery_worker worker --loglevel=INFO --pool=solo --concurrency=2 --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
