@@ -13,11 +13,27 @@ def generate_random_string(length):
 # Prefix for the worker name
 worker_name_prefix = "agent-"
 
-# Generate a random suffix for the worker name
-random_suffix = generate_random_string(8)
+# # Generate a random suffix for the worker name
+# random_suffix = generate_random_string(8)
 
-# Concatenate the prefix and random suffix to create the worker name
-worker_name = worker_name_prefix + random_suffix
+# # Concatenate the prefix and random suffix to create the worker name
+# worker_name = worker_name_prefix + random_suffix
+
+# Generate a unique worker name with a random suffix
+worker_name = f"{worker_name_prefix}{generate_random_string(8)}"
+command = [
+    "celery", "-A", "celery_worker", "worker",
+    "--loglevel=INFO",
+    "--pool=eventlet",
+    "--concurrency=20",
+    "--max-tasks-per-child=1000",
+    "--max-memory-per-child=200000",  # 明确为 200MB
+    "--prefetch-multiplier=1",
+    "--without-gossip",
+    "--without-mingle",
+    "--without-heartbeat",
+    f"--hostname={worker_name}"
+]
 
 command = [
     "celery", "-A", "celery_worker", "worker",
