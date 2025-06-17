@@ -20,6 +20,10 @@ random_suffix = generate_random_string(8)
 # Concatenate the prefix and random suffix to create the worker name
 worker_name = worker_name_prefix + random_suffix
 
+# Get port from Azure App Service environment variable
+port = os.getenv('PORT', '6006')
+print(f"Starting Flower monitoring on port {port}")
+
 # Start the Celery worker with queue configuration
 worker_process = subprocess.Popen(
     f"celery -A celery_worker worker --loglevel=DEBUG --pool=solo --concurrency=4 -Q celery,hipri --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
@@ -32,9 +36,9 @@ worker_process = subprocess.Popen(
     errors='replace'
 )
 
-# Start Flower monitoring
+# Start Flower monitoring with port from Azure App Service
 flower_process = subprocess.Popen(
-    "celery -A celery_worker flower --port=6006",
+    f"celery -A celery_worker flower --port={port}",
     shell=True,
     stdout=subprocess.PIPE,
     stderr=subprocess.STDOUT,
