@@ -53,7 +53,7 @@ def process_transcript(self,topic, message):
                 if 'conversation_id' in message_data:
                     emit_data['conversationid'] = message_data['conversation_id']
                 
-                self.sio.emit('celeryMessage', emit_data, namespace='/celery')
+                self.sio.emit('celeryMessage', emit_data)
                 # self.redis_client.append_to_list_json()
         except Exception as e:
             print(e)
