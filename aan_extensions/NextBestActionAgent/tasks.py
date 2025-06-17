@@ -134,7 +134,7 @@ def process_transcript(self, topic, message):
                                             "destinationName": celeryTopic,
                                             'conversationid': message_data['conversation_id']
                                         },
-                                        namespace="/celery",
+                                        callback=lambda *args: print("Message sent successfully:", args)
                                         
                                 )
                                 print("emit_socketio")
@@ -169,7 +169,8 @@ def process_transcript(self, topic, message):
                             if 'conversation_id' in message_data:
                                 emit_data['conversationid'] = message_data['conversation_id']
                             
-                            self.sio.emit('celeryMessage', emit_data, namespace='/celery')
+                            self.sio.emit('celeryMessage', emit_data,
+                                        callback=lambda *args: print("Message sent successfully:", args))
                             print(f"333333333333333333333333333333333333333333333333333")
                         # then we update those action indexs on redis
                         #self.redis_client.ltrim(client_id + '_nba_actions', 99 , 0) # we delete it
@@ -207,7 +208,7 @@ def process_transcript(self, topic, message):
                                         "destinationName": celeryTopic,
                                         'conversationid': message_data['conversation_id']
                                     },
-                                    namespace="/celery",
+                                    callback=lambda *args: print("Message sent successfully:", args)
                                     
                             )
         except Exception as e:

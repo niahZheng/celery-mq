@@ -91,7 +91,6 @@ def process_transcript(self, topic, message):
                                             "destinationName": summary_topic,
                                             'conversationid': message_data['conversationid']
                                         },
-                                        namespace="/celery",
                                         callback=lambda *args: print("Message sent successfully:", args)
                                     )
                                     print("Socket.IO message sent")
