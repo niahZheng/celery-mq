@@ -4,6 +4,7 @@ import subprocess
 import celery
 import sys
 import os
+import threading
 
 # Define a function to generate a random string of characters
 def generate_random_string(length):
@@ -19,34 +20,52 @@ random_suffix = generate_random_string(8)
 # Concatenate the prefix and random suffix to create the worker name
 worker_name = worker_name_prefix + random_suffix
 
-# Start the Celery worker with the generated hostname
-process = subprocess.Popen(
-    f"celery -A celery_worker worker --loglevel=INFO --pool=solo --concurrency=2 --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
+# Start the Celery worker with queue configuration
+worker_process = subprocess.Popen(
+    f"celery -A celery_worker worker --loglevel=DEBUG --pool=solo --concurrency=4 -Q celery,hipri --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
     shell=True,
-    stdout=subprocess.PIPE,  # 捕获标准输出
-    stderr=subprocess.STDOUT,  # 将标准错误重定向到标准输出
-    universal_newlines=True,  # 使用文本模式
-    bufsize=1,  # 行缓冲
-    encoding='utf-8',  # 使用 UTF-8 编码
-    errors='replace'  # 替换无法解码的字符
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+    universal_newlines=True,
+    bufsize=1,
+    encoding='utf-8',
+    errors='replace'
+)
+
+# Start Flower monitoring
+flower_process = subprocess.Popen(
+    "celery -A celery_worker flower --port=6006",
+    shell=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+    universal_newlines=True,
+    bufsize=1,
+    encoding='utf-8',
+    errors='replace'
 )
 
 # 实时读取并输出日志
-def log_output(process):
+def log_output(process, prefix=""):
     for line in iter(process.stdout.readline, ''):
         if line:
-            print(line.strip())
+            print(f"{prefix}{line.strip()}")
             sys.stdout.flush()  # 确保立即输出
 
 # 启动日志输出线程
-import threading
-log_thread = threading.Thread(target=log_output, args=(process,))
-log_thread.daemon = True
-log_thread.start()
+worker_log_thread = threading.Thread(target=log_output, args=(worker_process, "[Worker] "))
+worker_log_thread.daemon = True
+worker_log_thread.start()
+
+flower_log_thread = threading.Thread(target=log_output, args=(flower_process, "[Flower] "))
+flower_log_thread.daemon = True
+flower_log_thread.start()
 
 # 保持主进程运行
 try:
-    process.wait()
+    worker_process.wait()
+    flower_process.wait()
 except KeyboardInterrupt:
-    process.terminate()
-    process.wait()
+    worker_process.terminate()
+    flower_process.terminate()
+    worker_process.wait()
+    flower_process.wait()
