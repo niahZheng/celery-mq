@@ -17,7 +17,8 @@ class BaseTask(Task):
         if self._sio is None:
             self._sio = socketio.Client(logger=False, engineio_logger=False)
             self._sio.connect(
-                "https://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"
+                # "https://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"
+                os.getenv("AAN_CELERY_SIO_URI", "https://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io")
             )
             print("===============================Socketio client initialized")
         return self._sio
@@ -31,7 +32,7 @@ class BaseTask(Task):
             #     db=os.getenv("AAN_REDIS_DB_INDEX", 2),
             # )
             try:
-                redis_url = f"rediss://default:{os.getenv('REDIS_PASSWORD', '')}@rx-redis.redis.cache.windows.net:6380/1"
+                redis_url = f"rediss://default:{os.getenv('REDIS_PASSWORD', '')}@{os.getenv('REDIS_URL', 'rx-redis.redis.cache.windows.net:6380/1')}"
                 self._redis_client = redis.from_url(
                     redis_url,
                     decode_responses=True
