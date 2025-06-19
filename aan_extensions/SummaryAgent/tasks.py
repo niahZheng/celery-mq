@@ -44,7 +44,9 @@ def process_transcript(self, topic, message):
                     print("-----------------------testing, summary 2")
                     ###=============check type to see if we need to do summarization....start
                     message_type = message_data["type"]
-                    if message_type == "session_ended" or message_type == "session_manual":
+                    if message_type == "session_ended":
+                        # message_type == "session_ended" or message_type == "session_manual":
+                        # session_manual is combined into session_ended, with conversationEndTime is null 
                         pass # yes, we should do summary here 
                     else:
                         print("SummaryAgent ============= there is no need to do summary for type: ", message_type)
@@ -83,10 +85,11 @@ def process_transcript(self, topic, message):
                     with trace.get_tracer(__name__).start_as_current_span(
                         "summarize"
                     ):
-                        # new_summary = summarize(transcription_text) # the real summary from LLM 
                         print("SummaryAgent ============= input list:", transcripts_obj)
                         print("SummaryAgent ============= input for LLM:" + transcription_text)
-                        new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"
+                        # new_summary = summarize(transcription_text) # the real summary from LLM 
+                        # new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"  
+                        new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
 
                         if new_summary:
                             summary_topic = f"agent-assist/{client_id}/summarization"
@@ -95,7 +98,7 @@ def process_transcript(self, topic, message):
                                     "type": "summary",
                                     "parameters": {
                                         "text": new_summary,
-                                        "final":  True if message_type == "session_ended" else False,
+                                        # not used any more # "final":  True if message_type == "session_ended" else False,
                                     },
                                     "conversationStartTime": message_data["conversationStartTime"],
                                     "conversationEndTime": message_data["conversationEndTime"],
