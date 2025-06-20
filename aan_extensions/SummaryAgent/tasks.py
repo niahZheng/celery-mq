@@ -38,10 +38,9 @@ def process_transcript(self, topic, message):
             print(" SummaryAgent ============= message end ============= \n")
 
             with trace.get_tracer(__name__).start_as_current_span("redis_op"):
-                print("-----------------------testing, summary 1")
+                
                 if isinstance(client_id, str) and len(client_id) > 5: # must have client_id 
 
-                    print("-----------------------testing, summary 2")
                     ###=============check type to see if we need to do summarization....start
                     message_type = message_data["type"]
                     if message_type == "session_ended":
@@ -53,17 +52,16 @@ def process_transcript(self, topic, message):
                         return
 
                     ###=============check type to see if we need to do summarization....end 
-                    print("-----------------------testing, summary 3")
+
 
                     ###=============get history chats....start
                     transcripts_obj=[]
                     transcription_text=''
-                    """
-                    try: 
-                        print("-----------------------testing, summary 4")
+                    
+                    try:
                         turns_counter = self.redis_client.llen(client_id) or 0
-                        print("-----------------------testing, summary 5")
                         print(f"Turns counter: {turns_counter}")
+                        
                         if (turns_counter != 0) and (turns_counter % 2 == 0):
                             transcripts_obj = self.redis_client.lrange(
                                 client_id, 0, -1
@@ -78,7 +76,7 @@ def process_transcript(self, topic, message):
                     except Exception as e:
                         print(f"redis error message: {str(e)}")
                         print(f"redis error type: {type(e)}")
-                    """
+                    
                     ###=============get history chats....end 
 
 

@@ -32,7 +32,9 @@ class BaseTask(Task):
             #     db=os.getenv("AAN_REDIS_DB_INDEX", 2),
             # )
             try:
-                redis_url = f"rediss://default:{os.getenv('REDIS_PASSWORD', '')}@{os.getenv('REDIS_URL', 'rx-redis.redis.cache.windows.net:6380/1')}"
+                redis_url = f"{os.getenv('REDIS_PROTOCOL', 'rediss')}://default:{os.getenv('REDIS_PASSWORD', '')}@{os.getenv('REDIS_URL', 'rx-redis.redis.cache.windows.net:6380/1')}"
+                # print("Redis connection...................redis_url: ", redis_url)
+                
                 self._redis_client = redis.from_url(
                     redis_url,
                     decode_responses=True

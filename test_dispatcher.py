@@ -57,7 +57,8 @@ def send_test_message():
         #     args=[topic, message_json]
         # )
         task = app.send_task(
-            'aan_extensions.SummaryAgent.tasks.process_transcript',
+            # 'aan_extensions.SummaryAgent.tasks.process_transcript',
+            'aan_extensions.DispatcherAgent.tasks.process_transcript',
             args=[topic, message_json]
         )
         print(f"Task sent successfully with ID: {task.id}")
