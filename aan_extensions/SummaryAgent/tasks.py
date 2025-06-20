@@ -7,6 +7,7 @@ import traceback
 # from .summ import summarize
 import logging
 import json
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -52,17 +53,26 @@ def process_transcript(self, topic, message):
                         return
 
                     ###=============check type to see if we need to do summarization....end 
-
-
-                    ###=============get history chats....start
-                    transcripts_obj=[]
-                    transcription_text=''
                     
                     try:
-                        turns_counter = self.redis_client.llen(client_id) or 0
-                        print(f"Turns counter: {turns_counter}")
+                        transcripts_obj=[]
+                        transcription_text=''
+                        start_time=str(datetime.now())
+                        end_time=str(datetime.now())
+
+                        #-----------get start time.......start
+                        turns_counter = self.redis_client.llen(client_id+"_session_started") or 0
+                        print(f"Turns counter session_started: {turns_counter}")
+                        if turns_counter > 0:
+                            start_time = self.redis_client.lindex(client_id+"_session_started", 0)
+                        #-----------get start time.......end
                         
-                        if (turns_counter != 0) and (turns_counter % 2 == 0):
+                        #-----------get chat history.......start
+                        turns_counter = self.redis_client.llen(client_id) or 0
+                        print(f"Turns counter transcription: {turns_counter}")
+                        
+                        # if (turns_counter != 0) and (turns_counter % 2 == 0):
+                        if turns_counter != 0:
                             transcripts_obj = self.redis_client.lrange(
                                 client_id, 0, -1
                             )
@@ -73,63 +83,76 @@ def process_transcript(self, topic, message):
                                 f"{'Agent' if item['source'] == 'internal' else 'Customer'}: {item['text']}"
                                 for item in transcripts_dicts
                             )
+                            print("SummaryAgent ============= input list 111:", transcripts_obj)
+                            print("SummaryAgent ============= input for LLM 111:" + transcription_text)
+                        #-----------get chat history.......end
+
+                        print("SummaryAgent ============= input list 222:", transcripts_obj)
+                        print("SummaryAgent ============= input for LLM 222:" + transcription_text)
+
+                        #-----------get end time.......start
+                        print("testing..................conversationEndTime", message_data["parameters"]["conversationEndTime"])
+                        if message_data["parameters"]["conversationEndTime"]: 
+                            end_time = message_data["parameters"]["conversationEndTime"]
+                        else:
+                            end_time = start_time
+                        #-----------get end time.......end
+
+                        with trace.get_tracer(__name__).start_as_current_span(
+                            "summarize"
+                        ):
+                            print("SummaryAgent ============= input list:", transcripts_obj)
+                            print("SummaryAgent ============= input for LLM:" + transcription_text)
+                            # new_summary = summarize(transcription_text) # the real summary from LLM 
+                            # new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"  
+                            new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
+
+                            if new_summary:
+                                summary_topic = f"agent-assist/{client_id}/summarization"
+                                summary_message = json.dumps(
+                                    {
+                                        "type": "summary",
+                                        "parameters": {
+                                            "conversationStartTime": start_time,
+                                            "conversationEndTime": end_time,
+                                            "conversationid": message_data["conversationid"],
+                                            "text": new_summary,
+                                            # not used any more # "final":  True if message_type == "session_ended" else False,
+                                        },
+                                        "conversationid": message_data["conversationid"],
+                                    }
+                                )
+
+                                if not self.sio:
+                                    print("Error -------------- Socket.IO client is None")
+                                    return
+
+                                if not self.sio.connected:
+                                    print("Error -------------- Socket.IO client is not connected")
+                                    return
+            
+                                try:
+                                    print(f"SummaryAgent ============= Sending Socket.IO message to {summary_topic}")
+                                    print(f"Message content: {summary_message}")
+                                    self.sio.emit(
+                                        "celeryMessage",
+                                        {
+                                            "payloadString": summary_message,
+                                            "destinationName": summary_topic,
+                                            "conversationid": message_data["conversationid"],
+                                        },
+                                        callback=lambda *args: print("Message sent successfully:", args),
+                                    )
+                                    print("SummaryAgent ============= Socket.IO message sent")
+                                except Exception as e:
+                                    print(f"Error sending Socket.IO message: {str(e)}")
+                                    print(f"Error type: {type(e)}")
+                                    print(f"Error traceback: {traceback.format_exc()}")
+
                     except Exception as e:
                         print(f"redis error message: {str(e)}")
                         print(f"redis error type: {type(e)}")
                     
-                    ###=============get history chats....end 
-
-
-                    with trace.get_tracer(__name__).start_as_current_span(
-                        "summarize"
-                    ):
-                        print("SummaryAgent ============= input list:", transcripts_obj)
-                        print("SummaryAgent ============= input for LLM:" + transcription_text)
-                        # new_summary = summarize(transcription_text) # the real summary from LLM 
-                        # new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"  
-                        new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
-
-                        if new_summary:
-                            summary_topic = f"agent-assist/{client_id}/summarization"
-                            summary_message = json.dumps(
-                                {
-                                    "type": "summary",
-                                    "parameters": {
-                                        "text": new_summary,
-                                        # not used any more # "final":  True if message_type == "session_ended" else False,
-                                    },
-                                    "conversationStartTime": message_data["conversationStartTime"],
-                                    "conversationEndTime": message_data["conversationEndTime"],
-                                    "conversationid": message_data["conversationid"],
-                                    "session_id": message_data["parameters"]["session_id"],
-                                }
-                            )
-
-                            if not self.sio:
-                                print("Error -------------- Socket.IO client is None")
-                                return
-
-                            if not self.sio.connected:
-                                print("Error -------------- Socket.IO client is not connected")
-                                return
-        
-                            try:
-                                print(f"SummaryAgent ============= Sending Socket.IO message to {summary_topic}")
-                                print(f"Message content: {summary_message}")
-                                self.sio.emit(
-                                    "celeryMessage",
-                                    {
-                                        "payloadString": summary_message,
-                                        "destinationName": summary_topic,
-                                        "conversationid": message_data["conversationid"],
-                                    },
-                                    callback=lambda *args: print("Message sent successfully:", args),
-                                )
-                                print("SummaryAgent ============= Socket.IO message sent")
-                            except Exception as e:
-                                print(f"Error sending Socket.IO message: {str(e)}")
-                                print(f"Error type: {type(e)}")
-                                print(f"Error traceback: {traceback.format_exc()}")
                 else:
                     print(f"SummaryAgent ============= client_id is NOT good, please check the message data \n")
 
