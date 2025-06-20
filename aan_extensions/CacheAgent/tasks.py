@@ -55,13 +55,13 @@ def process_transcript(self,topic, message):
                     if message_data.get("type", "") == "session_started":
                         transcript_obj = message_data.get("parameters", {})#.get("text", None)
                         print(f"Saving rpush session_started {transcript_obj}")
-                        client_id = message_data['parameters']['session_id']
+                        client_id = message_data['parameters']['conversationid']
                         logger.debug(f"client_id: {client_id}")
                         self.redis_client.rpush(client_id + "_session_started", json.dumps(transcript_obj))
                     if message_data.get("type", "") == "session_ended":
                         transcript_obj = message_data.get("parameters", {})#.get("text", None)
                         print(f"Saving rpush session_ended {transcript_obj}")
-                        client_id = message_data['parameters']['session_id']
+                        client_id = message_data['parameters']['conversationid']
                         logger.debug(f"client_id: {client_id}")
                         self.redis_client.rpush(client_id + "_session_ended", json.dumps(transcript_obj))
                 except (json.JSONDecodeError, AttributeError):
