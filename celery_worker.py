@@ -11,6 +11,7 @@ from celery.signals import worker_process_init
 from dotenv import load_dotenv
 import os
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 DISABLE_TRACING = True  # 设置为 True 来禁用追踪

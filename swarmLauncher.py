@@ -25,8 +25,10 @@ port = os.getenv('PORT', '6006')
 print(f"Starting Flower monitoring on port {port}")
 
 # Start the Celery worker with queue configuration
+print("celery hostname.............................", worker_name_prefix + generate_random_string(8))
 worker_process = subprocess.Popen(
-    f"celery -A celery_worker worker --loglevel=DEBUG --pool=solo --concurrency=4 -Q celery,hipri --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
+    # f"celery -A celery_worker worker --loglevel=DEBUG --pool=solo --concurrency=4 -Q celery,hipri --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
+    f"celery -A celery_worker worker -n single_worker.%h --loglevel=DEBUG --pool=solo -Q celery --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
     shell=True,
     stdout=subprocess.PIPE,
     stderr=subprocess.STDOUT,
@@ -69,7 +71,12 @@ try:
     worker_process.wait()
     flower_process.wait()
 except KeyboardInterrupt:
-    worker_process.terminate()
-    flower_process.terminate()
-    worker_process.wait()
-    flower_process.wait()
+    worker_process.kill()
+    flower_process.kill()
+    # worker_process.terminate()
+    # flower_process.terminate()
+    # worker_process.wait()
+    # flower_process.wait()
+    # for local env testing, if process is not stopped correctly, 
+    # use this 'celery -A celery_worker control shutdown' in CLI 
+    # and then check http://localhost:15672/#/queues
