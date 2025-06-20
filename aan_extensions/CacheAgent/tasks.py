@@ -52,6 +52,14 @@ def process_transcript(self,topic, message):
                         transcript_obj = message_data.get("parameters", {})#.get("text", None)
                         print(f"Saving rpush {transcript_obj}")
                         self.redis_client.rpush(client_id, json.dumps(transcript_obj))
+                    if message_data.get("type", "") == "session_started":
+                        transcript_obj = message_data.get("parameters", {})#.get("text", None)
+                        print(f"Saving rpush {transcript_obj}")
+                        self.redis_client.rpush(client_id + "_session_started", json.dumps(transcript_obj))
+                    if message_data.get("type", "") == "session_ended":
+                        transcript_obj = message_data.get("parameters", {})#.get("text", None)
+                        print(f"Saving rpush {transcript_obj}")
+                        self.redis_client.rpush(client_id + "_session_ended", json.dumps(transcript_obj))
                 except (json.JSONDecodeError, AttributeError):
                     return None
         except Exception as e:
