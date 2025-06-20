@@ -43,15 +43,27 @@ def process_transcript(self,topic, message):
                 #self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic}, namespace='/celery')
                 #{"type":"transcription","parameters":{"source":"internal","text":"excellent okay what color did you want the new yorker in ","seq":7,"timestamp":24.04}} on topic: agent-assist/87ba0766-efc7-42c8-b2ec-af829f6b73ce/transcription
                 #{"type":"session_ended"} on topic: agent-assist/87ba0766-efc7-42c8-b2ec-af829f6b73ce
-                client_id = self.extract_client_id(topic)
-                logger.debug(f"client_id: {client_id}")
 
                 try:
                     message_data = json.loads(message)
                     if message_data.get("type", "") == "transcription":
                         transcript_obj = message_data.get("parameters", {})#.get("text", None)
                         print(f"Saving rpush {transcript_obj}")
+                        client_id = self.extract_client_id(topic)
+                        logger.debug(f"client_id: {client_id}")
                         self.redis_client.rpush(client_id, json.dumps(transcript_obj))
+                    if message_data.get("type", "") == "session_started":
+                        transcript_obj = message_data.get("parameters", {})#.get("text", None)
+                        print(f"Saving rpush session_started {transcript_obj}")
+                        client_id = message_data['parameters']['session_id']
+                        logger.debug(f"client_id: {client_id}")
+                        self.redis_client.rpush(client_id + "_session_started", json.dumps(transcript_obj))
+                    if message_data.get("type", "") == "session_ended":
+                        transcript_obj = message_data.get("parameters", {})#.get("text", None)
+                        print(f"Saving rpush session_ended {transcript_obj}")
+                        client_id = message_data['parameters']['session_id']
+                        logger.debug(f"client_id: {client_id}")
+                        self.redis_client.rpush(client_id + "_session_ended", json.dumps(transcript_obj))
                 except (json.JSONDecodeError, AttributeError):
                     return None
         except Exception as e:
