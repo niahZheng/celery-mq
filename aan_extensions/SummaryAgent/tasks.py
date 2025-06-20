@@ -64,7 +64,9 @@ def process_transcript(self, topic, message):
                         turns_counter = self.redis_client.llen(client_id+"_session_started") or 0
                         print(f"Turns counter session_started: {turns_counter}")
                         if turns_counter > 0:
-                            start_time = self.redis_client.lindex(client_id+"_session_started", 0)
+                            start_body = self.redis_client.lindex(client_id+"_session_started", 0)
+                            start_info = json.loads(start_body)
+                            start_time = start_info["conversationStartTime"]
                         #-----------get start time.......end
                         
                         #-----------get chat history.......start
