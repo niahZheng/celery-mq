@@ -32,7 +32,7 @@ def process_transcript(self, topic, message):
         #--------# try block of processing for sio 
         try:
             message_data = json.loads(message)
-            client_id = message_data["conversationid"] #it is conversation id from Geneysis UI 
+            client_id = message_data['parameters']["conversationid"] #it is conversation id from Geneysis UI 
             print(f"SummaryAgent ============= client_id: {client_id} \n")
             print( "SummaryAgent ============= message start ============= \n")
             print(json.dumps(message_data, indent=2, ensure_ascii=False))
