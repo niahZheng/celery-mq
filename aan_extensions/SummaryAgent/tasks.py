@@ -141,7 +141,7 @@ def process_transcript(self, topic, message):
                                         {
                                             "payloadString": summary_message,
                                             "destinationName": summary_topic,
-                                            "conversationid": message_data["conversationid"],
+                                            "conversationid": message_data['parameters']["conversationid"],
                                         },
                                         callback=lambda *args: print("Message sent successfully:", args),
                                     )
