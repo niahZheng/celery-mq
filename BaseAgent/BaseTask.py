@@ -33,7 +33,7 @@ class BaseTask(Task):
             # )
             try:
                 redis_url = f"{os.getenv('REDIS_PROTOCOL', 'rediss')}://default:{os.getenv('REDIS_PASSWORD', '')}@{os.getenv('REDIS_URL', 'rx-redis.redis.cache.windows.net:6380/1')}"
-                # print("Redis connection...................redis_url: ", redis_url)
+                print("Redis connection...................redis_url: ", redis_url)
                 
                 self._redis_client = redis.from_url(
                     redis_url,
