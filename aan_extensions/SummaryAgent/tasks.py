@@ -117,11 +117,11 @@ def process_transcript(self, topic, message):
                                         "parameters": {
                                             "conversationStartTime": start_time,
                                             "conversationEndTime": end_time,
-                                            "conversationid": message_data["conversationid"],
+                                            "conversationid": message_data['parameters']["conversationid"],
                                             "text": new_summary,
                                             # not used any more # "final":  True if message_type == "session_ended" else False,
                                         },
-                                        "conversationid": message_data["conversationid"],
+                                        "conversationid": message_data['parameters']["conversationid"],
                                     }
                                 )
 
