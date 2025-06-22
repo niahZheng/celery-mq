@@ -52,6 +52,9 @@ def process_transcript(self,topic, message):
                 # 如果存在 conversation_id，则添加到发送数据中
                 if 'conversation_id' in message_data:
                     emit_data['conversationid'] = message_data['conversation_id']
+                # 如果存在 conversationid， 则添加到发送数据中
+                if 'conversationid'  in message_data:
+                    emit_data['conversationid'] = message_data['conversationid']
                 
                 self.sio.emit('celeryMessage', emit_data, callback=lambda *args: print("Message sent successfully:", args))
                 # self.redis_client.append_to_list_json()
