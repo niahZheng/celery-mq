@@ -34,7 +34,8 @@ def send_test_message():
         "parameters": {
             "session_id": test_id,
             "conversationStartTime": "2025-06-19 03:37:21.533123",
-            "conversationEndTime": "2025-06-19 03:55:22.544123",
+            "conversationEndTime": None,
+            # "conversationEndTime": "2025-06-19 03:55:22.544123",
         },
     }
     # test_message = {
