@@ -32,7 +32,18 @@ def process_transcript(self, topic, message):
         #--------# try block of processing for sio 
         try:
             message_data = json.loads(message)
-            client_id = message_data['parameters']["conversationid"] #it is conversation id from Geneysis UI 
+
+            # client_id = message_data['parameters']["conversationid"] 
+            # it is conversation id from Geneysis UI 
+            client_id = 'none'
+            if "parameters" in message_data and "conversationid" in message_data["parameters"]:
+                client_id = message_data['parameters']["conversationid"]
+                print("'conversationid' in 'parameters' , it is expected=====================client_id:"+client_id)
+            else:
+                print("'conversationid' does not exist in 'parameters', unexpected=====================message:"+message)
+                return "'conversationid' does not exist in 'parameters'"
+
+
             print(f"SummaryAgent ============= client_id: {client_id} \n")
             print( "SummaryAgent ============= message start ============= \n")
             print(json.dumps(message_data, indent=2, ensure_ascii=False))
