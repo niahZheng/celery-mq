@@ -117,11 +117,11 @@ def process_transcript(self, topic, message):
                                         "parameters": {
                                             "conversationStartTime": start_time,
                                             "conversationEndTime": end_time,
-                                            "conversationid": message_data['parameters']["conversationid"],
+                                            "conversationid": client_id,
                                             "text": new_summary,
                                             # not used any more # "final":  True if message_type == "session_ended" else False,
                                         },
-                                        "conversationid": message_data['parameters']["conversationid"],
+                                        "conversationid": client_id,
                                     }
                                 )
 
@@ -141,7 +141,7 @@ def process_transcript(self, topic, message):
                                         {
                                             "payloadString": summary_message,
                                             "destinationName": summary_topic,
-                                            "conversationid": message_data['parameters']["conversationid"],
+                                            "conversationid": client_id,
                                         },
                                         callback=lambda *args: print("Message sent successfully:", args),
                                     )

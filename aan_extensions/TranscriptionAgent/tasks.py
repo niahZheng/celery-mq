@@ -36,6 +36,7 @@ def process_transcript(self,topic, message):
             # Process baggage items as needed
             for key, value in baggage.items():
                 logger.debug(f"Baggage: {key}={value}")
+                
         message_data = json.loads(message)
         try:
             with trace.get_tracer(__name__).start_as_current_span("emit_socketio") as child_span:
@@ -46,15 +47,9 @@ def process_transcript(self,topic, message):
                  # 构建发送数据，使用 get 方法安全地获取 agent_id
                 emit_data = {
                     'payloadString': message,
-                    'destinationName': topic
+                    'destinationName': topic,
+                    'conversationid': message_data['parameters']['conversationid'],
                 }
-                
-                # 如果存在 conversation_id，则添加到发送数据中
-                if 'conversation_id' in message_data:
-                    emit_data['conversationid'] = message_data['conversation_id']
-                # 如果存在 conversationid， 则添加到发送数据中
-                if 'conversationid'  in message_data:
-                    emit_data['conversationid'] = message_data['conversationid']
                 
                 self.sio.emit('celeryMessage', emit_data, callback=lambda *args: print("Message sent successfully:", args))
                 # self.redis_client.append_to_list_json()
