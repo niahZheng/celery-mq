@@ -104,11 +104,10 @@ def process_transcript(self, topic, message):
                         print("SummaryAgent ============= input for LLM 222:" + transcription_text)
 
                         #-----------get end time.......start
-                        print("testing..................conversationEndTime", message_data["parameters"]["conversationEndTime"])
-                        if message_data["parameters"]["conversationEndTime"]: 
+                        if "parameters" in message_data and "conversationEndTime" in message_data["parameters"]:
                             end_time = message_data["parameters"]["conversationEndTime"]
                         else:
-                            end_time = start_time
+                            end_time = None
                         #-----------get end time.......end
 
                         with trace.get_tracer(__name__).start_as_current_span(
@@ -122,19 +121,24 @@ def process_transcript(self, topic, message):
 
                             if new_summary:
                                 summary_topic = f"agent-assist/{client_id}/summarization"
-                                summary_message = json.dumps(
-                                    {
-                                        "type": "summary",
-                                        "parameters": {
-                                            "conversationStartTime": start_time,
-                                            "conversationEndTime": end_time,
-                                            "conversationid": client_id,
-                                            "text": new_summary,
-                                            # not used any more # "final":  True if message_type == "session_ended" else False,
-                                        },
+                                summary_body = {
+                                    "type": "summary",
+                                    "parameters": {
+                                        "conversationStartTime": start_time,
                                         "conversationid": client_id,
-                                    }
-                                )
+                                        "text": new_summary,
+                                     },
+                                    "conversationid": client_id,
+                                } 
+                                if end_time == None:
+                                    # UI click to trigger this, no end time
+                                    pass
+                                else:
+                                    # chat ends normally with end time 
+                                    summary_body["conversationEndTime"] = end_time
+
+                                #final string 
+                                summary_message = json.dumps(summary_body)
 
                                 if not self.sio:
                                     print("Error -------------- Socket.IO client is None")

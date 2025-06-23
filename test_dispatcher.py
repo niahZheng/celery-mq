@@ -27,7 +27,7 @@ def send_test_message():
     print("\nSending test message to dispatcher...")
 
     test_id = "cda1ce9a-af1e-499d-897c-e82da9c165e5"
-    test_type="transcription" # "session_started" "session_ended" "transcription"
+    test_type="session_ended" # "session_started" "session_ended" "transcription"
     topic = f"agent-assist/{test_id}/{test_type}" 
     test_message = {}
 
@@ -38,8 +38,8 @@ def send_test_message():
                 "conversationid": test_id,
                 "session_id": test_id,
                 "conversationStartTime": "2025-06-19 03:37:21.533123", 
-                "conversationEndTime": None, # from UI 
-                # "conversationEndTime": str(datetime.now()), # "2025-06-19 03:55:22.544123", # from Genesys
+                # nothing if from UI 
+                "conversationEndTime": str(datetime.now()), # "2025-06-19 03:55:22.544123", # from Genesys
             },
         }
 
