@@ -29,43 +29,44 @@ def send_test_message():
     test_id = "cda1ce9a-af1e-499d-897c-e82da9c165e5"
     test_type="transcription" # "session_started" "session_ended" "transcription"
     topic = f"agent-assist/{test_id}/{test_type}" 
+    test_message = {}
 
-    # 测试消息 "session_ended"
-    # test_message = {
-    #     "type": test_type, 
-    #     "parameters": {
-    #         "conversationid": test_id,
-    #         "session_id": test_id,
-    #         "conversationStartTime": "2025-06-19 03:37:21.533123",
-    #         "conversationEndTime": None, # from UI 
-    #         # "conversationEndTime": "2025-06-19 03:55:22.544123", # from Genesys
-    #     },
-    # }
+    if test_type == "session_ended": 
+        test_message = {
+            "type": test_type, 
+            "parameters": {
+                "conversationid": test_id,
+                "session_id": test_id,
+                "conversationStartTime": "2025-06-19 03:37:21.533123", 
+                "conversationEndTime": None, # from UI 
+                # "conversationEndTime": str(datetime.now()), # "2025-06-19 03:55:22.544123", # from Genesys
+            },
+        }
 
-    # 测试消息 "transcription"
-    selected_words = random.sample(words, 3)
-    test_message = {
-        "type": test_type, 
-        "parameters": {
-            "conversationid": test_id,
-            "session_id": test_id,
-            "source": "external",
-            "text": " ".join(selected_words) + " at "+ str(datetime.now()),
-            "seq": None,
-            "timestamp": datetime.now().timestamp(), #68.66, 
-        },
-    }
+    if test_type == "transcription": 
+        selected_words = random.sample(words, 3)
+        test_message = {
+            "type": test_type, 
+            "parameters": {
+                "conversationid": test_id,
+                "session_id": test_id,
+                "source": "external",
+                "text": " ".join(selected_words) + " at "+ str(datetime.now()),
+                "seq": None,
+                "timestamp": datetime.now().timestamp(), #68.66, 
+            },
+        }
 
-    # 测试消息 "session_started"
-    # test_message = {
-    #     "type": test_type, 
-    #     "parameters": {
-    #         "conversationid": test_id,
-    #         "session_id": test_id,
-    #         "conversationStartTime": "2025-06-19 03:37:21.533123",
-    #         "conversationEndTime": None,
-    #     },
-    # }
+    if test_type == "session_started": 
+        test_message = {
+            "type": test_type, 
+            "parameters": {
+                "conversationid": test_id,
+                "session_id": test_id,
+                "conversationStartTime": "2025-06-19 03:37:21.533123",
+                "conversationEndTime": None,
+            },
+        }
     
     # 转换为 JSON 字符串
     message_json = json.dumps(test_message)
