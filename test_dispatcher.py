@@ -3,6 +3,9 @@ import json
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+import random
+words = ["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew", "indianberry", "jackfruit"]
+
 
 # 加载环境变量
 load_dotenv()
@@ -24,35 +27,38 @@ def send_test_message():
     print("\nSending test message to dispatcher...")
 
     test_id = "cda1ce9a-af1e-499d-897c-e82da9c165e5"
-    test_type="session_ended" # "session_started" "session_ended" "transcription"
-    # 构建任务参数 
+    test_type="transcription" # "session_started" "session_ended" "transcription"
     topic = f"agent-assist/{test_id}/{test_type}" 
 
-    # 测试消息
-    test_message = {
-        "type": test_type, # "session_ended"
-        "parameters": {
-            "conversationid": test_id,
-            "session_id": test_id,
-            "conversationStartTime": "2025-06-19 03:37:21.533123",
-            "conversationEndTime": None,
-            # "conversationEndTime": "2025-06-19 03:55:22.544123",
-        },
-    }
+    # 测试消息 "session_ended"
     # test_message = {
-    #     "type": test_type, # "transcription" 
+    #     "type": test_type, 
     #     "parameters": {
     #         "conversationid": test_id,
     #         "session_id": test_id,
-    #         "source": "external",
-    #         # "text": "so you're um already extended you're a pretire it will end on august 24 so you need to give us a call back before always 20 fourth to give us a feedback if you i mean what happened to the product if it didn't something you know it give you the benefits such in it but let's say uh you love the product you like the product you don't need to give us a call back then it will be automatically uh you will be receiving a not a bottle for your subscription and uh set up a call i heard that you're not you know um sure uh you're dilling about the price which is $83 and 8 right okay so what i can do for you is aside from extending the your pre trial for another 15 days i'm also giving you my employee discount which is 20 percent of the scott so instead of paying $83 and 8 sets going to pay only $67.04 how about that",
-    #         "text": "so you're um already extended you're a pretire it will end on august 24 so you need to give us a call back "+ str(datetime.now()),
-    #         "seq": None,
-    #         "timestamp": datetime.now().timestamp(), #68.66, 
+    #         "conversationStartTime": "2025-06-19 03:37:21.533123",
+    #         "conversationEndTime": None, # from UI 
+    #         # "conversationEndTime": "2025-06-19 03:55:22.544123", # from Genesys
     #     },
     # }
+
+    # 测试消息 "transcription"
+    selected_words = random.sample(words, 3)
+    test_message = {
+        "type": test_type, 
+        "parameters": {
+            "conversationid": test_id,
+            "session_id": test_id,
+            "source": "external",
+            "text": " ".join(selected_words) + " at "+ str(datetime.now()),
+            "seq": None,
+            "timestamp": datetime.now().timestamp(), #68.66, 
+        },
+    }
+
+    # 测试消息 "session_started"
     # test_message = {
-    #     "type": test_type, # "session_started"
+    #     "type": test_type, 
     #     "parameters": {
     #         "conversationid": test_id,
     #         "session_id": test_id,
@@ -65,7 +71,6 @@ def send_test_message():
     message_json = json.dumps(test_message)
     
     try:
-        # 创建并发送任务
         task = app.send_task(
             'aan_extensions.DispatcherAgent.tasks.process_transcript',
             args=[topic, message_json]
