@@ -48,7 +48,7 @@ def process_transcript(self,topic, message):
                 emit_data = {
                     'payloadString': message,
                     'destinationName': topic,
-                    'conversationid': message_data['parameters']['conversationid'],
+                    'conversationid': message_data['conversationid'],
                 }
                 
                 self.sio.emit('celeryMessage', emit_data, callback=lambda *args: print("Message sent successfully:", args))
