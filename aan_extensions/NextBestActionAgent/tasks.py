@@ -124,7 +124,8 @@ def process_transcript(self, topic, message):
                                         "text": "Do something",
                                         "action_id": "action789",
                                         "options": ["option1", "option2"]
-                                    }
+                                    },
+                                    "conversation_id": message_data['conversation_id']
                                 })
                                 celeryTopic = f"agent-assist/{client_id}/nextbestaction"
                                 self.sio.emit(
