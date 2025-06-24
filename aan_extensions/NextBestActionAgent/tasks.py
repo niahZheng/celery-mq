@@ -158,7 +158,8 @@ def process_transcript(self, topic, message):
                                 "type": "completed_action",
                                 "parameters": {
                                     "action_id": action_id
-                                }
+                                },
+                                "conversation_id": message_data['conversation_id']
                             })
 
                             emit_data = {
