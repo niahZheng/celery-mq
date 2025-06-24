@@ -101,6 +101,7 @@ def process_transcript(self, topic, message):
                             # action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
                             action, options = "Do something", ["option1", "option2"]
                             logging.info(f"Generated action for session {client_id}: {action}")
+                            logging.info(f"Action type: {type(action)}, Action value: '{action}'")
                             if action and action !="noresponse":
                                 # since actions are distributed, maybe this action_id thing is inefficient?
                                 # maybe the action IDs can be random
@@ -188,6 +189,7 @@ def process_transcript(self, topic, message):
                     # agent clicked on UI
                     wa_session = self.redis_client.get(client_id + '_nba_wa')
                     action, options = generate_next_best_action(client_id, message_data['parameters']['text'],wa_session,True) 
+                    logging.info(f"Manual completion - Action type: {type(action)}, Action value: '{action}'")
                     if action:
                             action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
                             action_payload = {"action_id": action_id, "action": action, "status": "pending"}
