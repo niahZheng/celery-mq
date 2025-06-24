@@ -77,7 +77,8 @@ def process_transcript(self, topic, message):
                     # actually you can't have empty lists in redis
                     # self.redis_client.rpush(client_id + '_actions', json.dumps())
                     client_id = message_data['parameters']['session_id']
-                    wa_session_id = create_session()
+                    # wa_session_id = create_session()
+                    wa_session_id = "1234567890"
                     print(f"client_id: {client_id} - wa_session_id {wa_session_id}")
                     self.redis_client.set(client_id + '_nba_wa', wa_session_id)
                 elif match and message_data['type'] == 'session_ended':
@@ -126,7 +127,7 @@ def process_transcript(self, topic, message):
                                         "action_id": "action789",
                                         "options": ["option1", "option2"]
                                     },
-                                    "conversation_id": message_data['conversation_id']
+                                    "conversationid": message_data['conversationid']
                                 })
                                 celeryTopic = f"agent-assist/{client_id}/nextbestaction"
                                 self.sio.emit(
@@ -134,7 +135,7 @@ def process_transcript(self, topic, message):
                                         {
                                             "payloadString": celeryMessage,
                                             "destinationName": celeryTopic,
-                                            'conversationid': message_data['conversation_id']
+                                            'conversationid': message_data['conversationid']
                                         },
                                         callback=lambda *args: print("Message sent successfully:", args)
                                         
@@ -160,7 +161,7 @@ def process_transcript(self, topic, message):
                                 "parameters": {
                                     "action_id": action_id
                                 },
-                                "conversation_id": message_data['conversation_id']
+                                "conversationid": message_data['conversationid']
                             })
 
                             emit_data = {
@@ -168,9 +169,9 @@ def process_transcript(self, topic, message):
                                 'destinationName': celeryTopic
                             }
                             
-                            # 如果存在 conversation_id，则添加到发送数据中
-                            if 'conversation_id' in message_data:
-                                emit_data['conversationid'] = message_data['conversation_id']
+                            # 如果存在 conversationid，则添加到发送数据中
+                            if 'conversationid' in message_data:
+                                emit_data['conversationid'] = message_data['conversationid']
                             
                             self.sio.emit('celeryMessage', emit_data,
                                         callback=lambda *args: print("Message sent successfully:", args))
@@ -188,7 +189,8 @@ def process_transcript(self, topic, message):
                 elif match and message_data['type'] == 'manual_completion':
                     # agent clicked on UI
                     wa_session = self.redis_client.get(client_id + '_nba_wa')
-                    action, options = generate_next_best_action(client_id, message_data['parameters']['text'],wa_session,True) 
+                    # action, options = generate_next_best_action(client_id, message_data['parameters']['text'],wa_session,True) 
+                    action, options = "Do something", ["option1", "option2"]
                     logging.info(f"Manual completion - Action type: {type(action)}, Action value: '{action}'")
                     if action:
                             action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
@@ -210,7 +212,7 @@ def process_transcript(self, topic, message):
                                     {
                                         "payloadString": celeryMessage,
                                         "destinationName": celeryTopic,
-                                        'conversationid': message_data['conversation_id']
+                                        'conversationid': message_data['conversationid']
                                     },
                                     callback=lambda *args: print("Message sent successfully:", args)
                                     
