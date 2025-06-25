@@ -124,3 +124,24 @@ def calculate_similarity(text1, text2):
     tfidf_matrix = vectorizer.fit_transform([text1, text2])
     similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
     return similarity[0][0]
+
+
+def get_quick_actions(conversationId, transcript, history_messages, pre_intent, identified, verified):
+    # response = assistant.message(
+    #     input={
+    #         "conversationId": conversationId,
+    #         "verified": verified, ###verified/failed/unverified
+    #         "identified": identified, ###identified/failed/unidentified
+    #         "message": transcript，
+    #         "history_messages":["guest: hi, I need your help for my ticket order.", "agent: Sure, what can i do for you?"],
+    #         "pre_intent":"OrderStatus"
+    #     }
+    # ).get_result()
+    response = {
+        "conversationId": conversationId,
+        "intentType": "OrderStatus", ## NULL/None if no feedbak
+        "quickActions": ["check_order"]
+    }
+    return response
+
+    

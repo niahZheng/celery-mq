@@ -4,7 +4,7 @@ from BaseAgent import BaseTask
 import logging
 import json
 import re
-from .nba import generate_next_best_action, check_action_completion, create_session
+from .nba import generate_next_best_action, check_action_completion, create_session, get_quick_actions
 
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind
@@ -63,12 +63,17 @@ def process_transcript(self, topic, message):
             # self.sio.emit('celeryMessage', {'payloadString': message, 'destinationName': topic}, namespace='/celery') #
             client_id = self.extract_client_id(topic)
             print(f"initial client_id--------NBA: {client_id}")
+            pre_intent = None
+            history_messages = []
+            identified = 'unidentified'
+            verified = 'unverified'
+            
             with trace.get_tracer(__name__).start_as_current_span(
                 "redis_op"):
                 message_data = json.loads(message)
                 # check what kind of event it is
                 event_type = self.extract_event(topic)
-                session_id_pattern = re.compile(r"agent-assist/([^/]+)/.*") 
+                session_id_pattern = re.compile(r"agent-assist/([^/]+)/.*")
                 match = session_id_pattern.match(topic)
 
                 if topic == "agent-assist/session" and message_data['type'] == 'session_started':
@@ -102,17 +107,31 @@ def process_transcript(self, topic, message):
                         # if nba_length == 0:
                         transcripts_history = self.redis_client.lrange(client_id, 0, -1)
                         print(f"transcripts_history: {transcripts_history}")
-                        # action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
-                        action, options = "Do something", ["option1", "option2"]
-                        logging.info(f"Generated action for session {client_id}: {action}")
-                        logging.info(f"Action type: {type(action)}, Action value: '{action}'")
-                        if action and action !="noresponse":
-                            # since actions are distributed, maybe this action_id thing is inefficient?
+                        
+                        # 检查Redis中是否存在client_id_identified数据
+                        identified_data = self.redis_client.get(client_id + '_identified')
+                        verified_data = self.redis_client.get(client_id + '_verified')
+                        if identified_data:
+                            identified = 'identified' 
+                        elif verified_data:
+                            verified = "verified"
+                        else:
+                            pass
+                        
+                        ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified, verified)
+                        # action, options = "Do something", ["option1", "option2"]
+                        quickActions = ragResponse['quickActions']
+                        logging.info(f"ragResponse: {ragResponse}")
+
+                        if quickActions['intentType']:
+                            pre_intent = quickActions['intentType']
+
+                        if quickActions:
                             # maybe the action IDs can be random
                             # or they should be defined on the WA skill itself
                             action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
                             action_payload = {"action_id": action_id, "action": action, "status": "pending"}
-                            self.redis_client.rpush(client_id + '_nba_actions', json.dumps(action_payload) )
+                            self.redis_client.rpush(client_id + '_nba_actions', json.dumps(action_payload))
                             # emit messages to UI
                             #publish_action(client, client_id, action, action_id,options)
                             # celeryMessage = json.dumps({
@@ -120,15 +139,18 @@ def process_transcript(self, topic, message):
                             #     "parameters": {
                             #         "text": action,
                             #         "action_id": action_id,
-                            #         "options": options 
+                            #         "options": options
                             #     }
-                            # })
+                            # })                            
+                            
                             celeryMessage = json.dumps({
                                 "type": "new_action",
                                 "parameters": {
                                     "text": "Do something",
                                     "action_id": "action789",
-                                    "options": ["option1", "option2"]
+                                    "options": ["option1", "option2"],
+                                    "quickActions": ["option1", "option2"],
+                                    "intentType": quickActions['intentType'],
                                 },
                                 "conversationid": message_data['conversationid']
                             })
