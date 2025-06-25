@@ -100,7 +100,7 @@ def process_transcript(self, topic, message):
                         # nba_length = self.redis_client.llen(client_id + '_nba_actions')
                         # print(f"nba_length {nba_length}")
                         # if nba_length == 0:
-                        transcripts_history = self.redis_client.get(client_id)
+                        transcripts_history = self.redis_client.lrange(client_id, 0, -1)
                         print(f"transcripts_history: {transcripts_history}")
                         # action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
                         action, options = "Do something", ["option1", "option2"]
