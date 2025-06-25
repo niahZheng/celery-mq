@@ -88,8 +88,11 @@ def process_transcript(self, topic, message):
                     # self.redis_client.set(client_id + '_nba_wa', wa_session_id)
                     pass
                 elif match and message_data['type'] == 'session_ended':
-                    self.redis_client.delete(client_id + '_nba_wa')
-                    self.redis_client.delete(client_id + '_nba_actions')
+                    # self.redis_client.delete(client_id + '_identification')
+                    # self.redis_client.delete(client_id + '_verified')
+                    # self.redis_client.delete(client_id + '_quick_actions')
+                    # self.redis_client.delete(client_id)
+                    pass
                 elif event_type == 'transcription':
                     # external - GNBA
                     # internal - check completion
@@ -129,9 +132,9 @@ def process_transcript(self, topic, message):
                         if quickActions:
                             # maybe the action IDs can be random
                             # or they should be defined on the WA skill itself
-                            action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
-                            action_payload = {"action_id": action_id, "action": action, "status": "pending"}
-                            self.redis_client.rpush(client_id + '_nba_actions', json.dumps(action_payload))
+                            # action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
+                            # action_payload = {"action_id": action_id, "action": action, "status": "pending"}
+                            self.redis_client.rpush(client_id + '_quick_actions', json.dumps(quickActions))
                             # emit messages to UI
                             #publish_action(client, client_id, action, action_id,options)
                             # celeryMessage = json.dumps({
