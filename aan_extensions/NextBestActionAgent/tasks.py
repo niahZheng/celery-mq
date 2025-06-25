@@ -125,10 +125,8 @@ def process_transcript(self, topic, message):
                         # action, options = "Do something", ["option1", "option2"]
                         quickActions = ragResponse['quickActions']
                         intentType = ragResponse['intentType']
-                        logging.info(f"ragResponse: {ragResponse}")
-
-                        if intentType:
-                            pre_intent = intentType
+                        pre_intent = intentType
+                        logging.info(f"ragResponse: {ragResponse}")                        
 
                         if quickActions:
                             # maybe the action IDs can be random
@@ -158,6 +156,7 @@ def process_transcript(self, topic, message):
                                 },
                                 "conversationid": message_data['conversationid']
                             })
+                            logging.info(f"new_action celeryMessage: {celeryMessage}")
                             celeryTopic = f"agent-assist/{client_id}/nextbestaction"
                             self.sio.emit(
                                     "celeryMessage",
