@@ -76,10 +76,12 @@ def process_transcript(self, topic, message):
                     # create actions list and store in redis
                     # actually you can't have empty lists in redis
                     # self.redis_client.rpush(client_id + '_actions', json.dumps())
-                    client_id = message_data['parameters']['session_id']
-                    wa_session_id = create_session()
-                    print(f"client_id: {client_id} - wa_session_id {wa_session_id}")
-                    self.redis_client.set(client_id + '_nba_wa', wa_session_id)
+                    # client_id = message_data['parameters']['session_id']
+                    # wa_session_id = create_session()
+                    # wa_session_id = "1234567890"
+                    # print(f"client_id: {client_id} - wa_session_id {wa_session_id}")
+                    # self.redis_client.set(client_id + '_nba_wa', wa_session_id)
+                    pass
                 elif match and message_data['type'] == 'session_ended':
                     self.redis_client.delete(client_id + '_nba_wa')
                     self.redis_client.delete(client_id + '_nba_actions')
@@ -90,88 +92,92 @@ def process_transcript(self, topic, message):
                     message_data = json.loads(message)
                     last_transcript = message_data["parameters"]
 
-                    wa_session = self.redis_client.get(client_id + '_nba_wa')
-                    print(f"client_id: {client_id} - redis_wa_session_id {wa_session}")
+                    # wa_session = self.redis_client.get(client_id + '_nba_wa')
+                    # print(f"client_id: {client_id} - redis_wa_session_id {wa_session}")
                     print(f"last_transcript: {last_transcript}")
                     if last_transcript['source'] == 'external':
                         #check if there is an active action
-                        nba_length = self.redis_client.llen(client_id + '_nba_actions')
-                        print(f"nba_length {nba_length}")
-                        if nba_length == 0:
-                            # action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
-                            action, options = "Do something", ["option1", "option2"]
-                            logging.info(f"Generated action for session {client_id}: {action}")
-                            if action and action !="noresponse":
-                                # since actions are distributed, maybe this action_id thing is inefficient?
-                                # maybe the action IDs can be random
-                                # or they should be defined on the WA skill itself
-                                action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
-                                action_payload = {"action_id": action_id, "action": action, "status": "pending"}
-                                self.redis_client.rpush(client_id + '_nba_actions', json.dumps(action_payload) )
-                                # emit messages to UI
-                                #publish_action(client, client_id, action, action_id,options)
-                                # celeryMessage = json.dumps({
-                                #     "type": "new_action",
-                                #     "parameters": {
-                                #         "text": action,
-                                #         "action_id": action_id,
-                                #         "options": options 
-                                #     }
-                                # })
-                                celeryMessage = json.dumps({
-                                    "type": "new_action",
-                                    "parameters": {
-                                        "text": "Do something",
-                                        "action_id": "action789",
-                                        "options": ["option1", "option2"]
-                                    }
-                                })
-                                celeryTopic = f"agent-assist/{client_id}/nextbestaction"
-                                self.sio.emit(
-                                        "celeryMessage",
-                                        {
-                                            "payloadString": celeryMessage,
-                                            "destinationName": celeryTopic,
-                                            'conversationid': message_data['conversation_id']
-                                        },
-                                        callback=lambda *args: print("Message sent successfully:", args)
-                                        
-                                )
-                                print("emit_socketio")
-                    elif last_transcript['source'] == 'internal':    
+                        # nba_length = self.redis_client.llen(client_id + '_nba_actions')
+                        # print(f"nba_length {nba_length}")
+                        # if nba_length == 0:
+                        transcripts_history = self.redis_client.lrange(client_id, 0, -1)
+                        print(f"transcripts_history: {transcripts_history}")
+                        # action, options = generate_next_best_action(client_id, last_transcript["text"],wa_session) 
+                        action, options = "Do something", ["option1", "option2"]
+                        logging.info(f"Generated action for session {client_id}: {action}")
+                        logging.info(f"Action type: {type(action)}, Action value: '{action}'")
+                        if action and action !="noresponse":
+                            # since actions are distributed, maybe this action_id thing is inefficient?
+                            # maybe the action IDs can be random
+                            # or they should be defined on the WA skill itself
+                            action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
+                            action_payload = {"action_id": action_id, "action": action, "status": "pending"}
+                            self.redis_client.rpush(client_id + '_nba_actions', json.dumps(action_payload) )
+                            # emit messages to UI
+                            #publish_action(client, client_id, action, action_id,options)
+                            # celeryMessage = json.dumps({
+                            #     "type": "new_action",
+                            #     "parameters": {
+                            #         "text": action,
+                            #         "action_id": action_id,
+                            #         "options": options 
+                            #     }
+                            # })
+                            celeryMessage = json.dumps({
+                                "type": "new_action",
+                                "parameters": {
+                                    "text": "Do something",
+                                    "action_id": "action789",
+                                    "options": ["option1", "option2"]
+                                },
+                                "conversationid": message_data['conversationid']
+                            })
+                            celeryTopic = f"agent-assist/{client_id}/nextbestaction"
+                            self.sio.emit(
+                                    "celeryMessage",
+                                    {
+                                        "payloadString": celeryMessage,
+                                        "destinationName": celeryTopic,
+                                        'conversationid': message_data['conversationid']
+                                    },
+                                    callback=lambda *args: print("Message sent successfully:", args)
+                                    
+                            )
+                            print("emit_socketio")
+                    elif last_transcript['source'] == 'internal':
+                        pass
                         #actions = json.loads(self.redis_client.lindex(client_id + '_nba_actions', -1) or "[]")
-                        actions = self.redis_client.lrange(client_id + '_nba_actions', 0, -1) or []
+                        # actions = self.redis_client.lrange(client_id + '_nba_actions', 0, -1) or []
                         # actions is array of:
                         # {"action_id": action_id, "action": action, "status": "pending"}
                         # completed_action_ids_idxs, completed_actions_ids = check_action_completion(client_id, last_transcript["text"], actions)
                         
                         # 伪造已完成的动作 ID
-                        completed_actions_ids = ["action789", "action790"]  # 使用与之前发送的 action_id 匹配的值
-                        print(f"Mock completed actions: {completed_actions_ids}")
+                        # completed_actions_ids = ["action789", "action790"]  # 使用与之前发送的 action_id 匹配的值
+                        # print(f"Mock completed actions: {completed_actions_ids}")
 
                         # first we emit all the action IDs that are completed for the frontend (fast!)
-                        for action_id in completed_actions_ids:                                      
-                            print(f"111111111111111111111111111111111111111111111111")
-                            celeryTopic = f"agent-assist/{client_id}/nextbestaction"
-                            celeryMessage = json.dumps({
-                                "type": "completed_action",
-                                "parameters": {
-                                    "action_id": action_id
-                                }
-                            })
+                        # for action_id in completed_actions_ids:
+                        #     celeryTopic = f"agent-assist/{client_id}/nextbestaction"
+                        #     celeryMessage = json.dumps({
+                        #         "type": "completed_action",
+                        #         "parameters": {
+                        #             "action_id": action_id
+                        #         },
+                        #         "conversationid": message_data['conversationid']
+                        #     })
 
-                            emit_data = {
-                                'payloadString': celeryMessage,
-                                'destinationName': celeryTopic
-                            }
+                        #     emit_data = {
+                        #         'payloadString': celeryMessage,
+                        #         'destinationName': celeryTopic
+                        #     }
                             
-                            # 如果存在 conversation_id，则添加到发送数据中
-                            if 'conversation_id' in message_data:
-                                emit_data['conversationid'] = message_data['conversation_id']
+                        #     # 如果存在 conversationid，则添加到发送数据中
+                        #     if 'conversationid' in message_data:
+                        #         emit_data['conversationid'] = message_data['conversationid']
                             
-                            self.sio.emit('celeryMessage', emit_data,
-                                        callback=lambda *args: print("Message sent successfully:", args))
-                            print(f"333333333333333333333333333333333333333333333333333")
+                        #     self.sio.emit('celeryMessage', emit_data,
+                        #                 callback=lambda *args: print("Message sent successfully:", args))
                         # then we update those action indexs on redis
                         #self.redis_client.ltrim(client_id + '_nba_actions', 99 , 0) # we delete it
 
@@ -185,7 +191,9 @@ def process_transcript(self, topic, message):
                 elif match and message_data['type'] == 'manual_completion':
                     # agent clicked on UI
                     wa_session = self.redis_client.get(client_id + '_nba_wa')
-                    action, options = generate_next_best_action(client_id, message_data['parameters']['text'],wa_session,True) 
+                    # action, options = generate_next_best_action(client_id, message_data['parameters']['text'],wa_session,True) 
+                    action, options = "Do something", ["option1", "option2"]
+                    logging.info(f"Manual completion - Action type: {type(action)}, Action value: '{action}'")
                     if action:
                             action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
                             action_payload = {"action_id": action_id, "action": action, "status": "pending"}
@@ -206,7 +214,7 @@ def process_transcript(self, topic, message):
                                     {
                                         "payloadString": celeryMessage,
                                         "destinationName": celeryTopic,
-                                        'conversationid': message_data['conversation_id']
+                                        'conversationid': message_data['conversationid']
                                     },
                                     callback=lambda *args: print("Message sent successfully:", args)
                                     
