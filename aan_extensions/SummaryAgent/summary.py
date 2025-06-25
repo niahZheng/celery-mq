@@ -15,14 +15,19 @@ MODEL_ID = os.environ.get('AAN_SUMMARIZATION_LLM_MODEL_NAME', 'ibm/granite-13b-c
 
 def get_iam_token():
     """Retrieve IAM token using API key"""
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    data = {"grant_type": "urn:ibm:params:oauth:grant-type:apikey", "apikey": API_KEY}
-    response = requests.post(IAM_TOKEN_URL, headers=headers, data=data)
-    
-    if response.status_code == 200:
-        return response.json()["access_token"]
-    else:
-        raise Exception(f"IAM token request failed: {response.status_code} - {response.text}")
+    try:
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        data = {"grant_type": "urn:ibm:params:oauth:grant-type:apikey", "apikey": API_KEY}
+        response = requests.post(IAM_TOKEN_URL, headers=headers, data=data)
+        
+        if response.status_code == 200:
+            return response.json()["access_token"]
+        else:
+            print(f"get_iam_token.....IAM token request failed.....error message: {response.text}")
+            raise Exception(f"IAM token request failed: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"get_iam_token......error message: {str(e)}")
+        print(f"get_iam_token......error type: {type(e)}")
 
 def format_chat_history_for_prompt(conversations_json):
     """Format chat history into transcript string"""
@@ -45,8 +50,8 @@ def summarize(conversations_string):
         access_token = get_iam_token()
         # print(access_token)
     except Exception as e:
-        print(f"redis error message: {str(e)}")
-        print(f"redis error type: {type(e)}")
+        print(f"try to get access_token......error message: {str(e)}")
+        print(f"try to get access_token......error type: {type(e)}")
 
     # Construct prompt (PRESERVED EXACTLY AS REQUESTED)
     prompt_template = f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>
@@ -122,8 +127,10 @@ Chat Transcript:
             if "choices" in result and len(result["choices"])>0:
                 return result["choices"][0]["message"]["content"]
             else:
+                print(f"response something wrong......error message: {response.text}")
                 raise Exception(f"Error something wrong ({response.status_code}), returned text: {response.text}")
         except Exception as e:
+            print(f"Unexpected error message......error message: {response.text}")
             print(f"Unexpected error message: {str(e)}")
             print(f"Unexpected error type: {type(e)}")
             raise Exception(f"Error something wrong ({response.status_code}), returned text: {response.text}")
