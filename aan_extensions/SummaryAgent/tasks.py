@@ -65,6 +65,7 @@ def process_transcript(self, topic, message):
 
                     ###=============check type to see if we need to do summarization....end 
                     
+                    ###=============summarize main body....start
                     try:
                         transcripts_obj=[]
                         transcription_text=''
@@ -75,9 +76,13 @@ def process_transcript(self, topic, message):
                         turns_counter = self.redis_client.llen(client_id+"_session_started") or 0
                         print(f"Turns counter session_started: {turns_counter}")
                         if turns_counter > 0:
-                            start_body = self.redis_client.lindex(client_id+"_session_started", 0)
-                            start_info = json.loads(start_body)
-                            start_time = start_info["conversationStartTime"]
+                            try:
+                                start_body = self.redis_client.lindex(client_id+"_session_started", 0)
+                                start_info = json.loads(start_body)
+                                start_time = start_info["conversationStartTime"]
+                            except Exception as e:
+                                print(f"start_time....error message: {str(e)}")
+                                print(f"start_time....error type: {type(e)}")
                         #-----------get start time.......end
                         
                         #-----------get chat history.......start
@@ -86,18 +91,22 @@ def process_transcript(self, topic, message):
                         
                         # if (turns_counter != 0) and (turns_counter % 2 == 0):
                         if turns_counter != 0:
-                            transcripts_obj = self.redis_client.lrange(
-                                client_id, 0, -1
-                            )
-                            transcripts_dicts = [
-                                json.loads(item) for item in transcripts_obj
-                            ]
-                            transcription_text = "\n".join(
-                                f"{'Agent' if item['source'] == 'internal' else 'Customer'}: {item['text']}"
-                                for item in transcripts_dicts
-                            )
-                            print("SummaryAgent ============= input list 111:", transcripts_obj)
-                            print("SummaryAgent ============= input for LLM 111:" + transcription_text)
+                            try:
+                                transcripts_obj = self.redis_client.lrange(
+                                    client_id, 0, -1
+                                )
+                                transcripts_dicts = [
+                                    json.loads(item) for item in transcripts_obj
+                                ]
+                                transcription_text = "\n".join(
+                                    f"{'Agent' if item['source'] == 'internal' else 'Customer'}: {item['text']}"
+                                    for item in transcripts_dicts
+                                )
+                                print("SummaryAgent ============= input list 111:", transcripts_obj)
+                                print("SummaryAgent ============= input for LLM 111:" + transcription_text)
+                            except Exception as e:
+                                print(f"transcription_text....error message: {str(e)}")
+                                print(f"transcription_text....error type: {type(e)}")
                         #-----------get chat history.......end
 
                         print("SummaryAgent ============= input list 222:", transcripts_obj)
@@ -116,9 +125,13 @@ def process_transcript(self, topic, message):
                             print("SummaryAgent ============= input list:", transcripts_obj)
                             print("SummaryAgent ============= input for LLM:" + transcription_text)
                             new_summary = summarize(transcription_text) # the real summary from LLM 
-                            new_summary_json = json.loads(new_summary) 
-                            if "ata" not in new_summary_json:
-                                new_summary_json["ata"]=[]
+                            try:
+                                new_summary_json = json.loads(new_summary) 
+                                if "ata" not in new_summary_json:
+                                    new_summary_json["ata"]=[]
+                            except Exception as e:
+                                print(f"transcription_text....error message: {str(e)}")
+                                print(f"transcription_text....error type: {type(e)}")
 
                             # new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"  
                             # new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
@@ -169,10 +182,11 @@ def process_transcript(self, topic, message):
                                     print(f"Error sending Socket.IO message: {str(e)}")
                                     print(f"Error type: {type(e)}")
                                     print(f"Error traceback: {traceback.format_exc()}")
-
+                    ###=============summarize main body....end
                     except Exception as e:
-                        print(f"redis error message: {str(e)}")
-                        print(f"redis error type: {type(e)}")
+                        print(f"summarize main body....error message: {str(e)}")
+                        print(f"summarize main body....error type: {type(e)}")
+                    
                     
                 else:
                     print(f"SummaryAgent ============= client_id is NOT good, please check the message data \n")
