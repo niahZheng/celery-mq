@@ -168,7 +168,7 @@ def process_transcript(self, topic, message):
                                     callback=lambda *args: print("Message sent successfully:", args)
                                     
                             )
-                            print("emit_socketio")
+                            print(f"new quick actions->ragResponse->emit_socketio: {celeryMessage}")
                     elif last_transcript['source'] == 'internal':
                         pass
                         #actions = json.loads(self.redis_client.lindex(client_id + '_nba_actions', -1) or "[]")
