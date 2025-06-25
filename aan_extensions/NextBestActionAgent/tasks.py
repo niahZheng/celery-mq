@@ -124,10 +124,11 @@ def process_transcript(self, topic, message):
                         ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified, verified)
                         # action, options = "Do something", ["option1", "option2"]
                         quickActions = ragResponse['quickActions']
+                        intentType = ragResponse['intentType']
                         logging.info(f"ragResponse: {ragResponse}")
 
-                        if quickActions['intentType']:
-                            pre_intent = quickActions['intentType']
+                        if intentType:
+                            pre_intent = intentType
 
                         if quickActions:
                             # maybe the action IDs can be random
@@ -152,8 +153,8 @@ def process_transcript(self, topic, message):
                                     "text": "Do something",
                                     "action_id": "action789",
                                     "options": ["option1", "option2"],
-                                    "quickActions": ["option1", "option2"],
-                                    "intentType": quickActions['intentType'],
+                                    "quickActions": quickActions,
+                                    "intentType": intentType,
                                 },
                                 "conversationid": message_data['conversationid']
                             })
