@@ -4,7 +4,7 @@ from BaseAgent import BaseTask
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind
 import traceback
-# from .summ import summarize
+from .summary import summarize
 import logging
 import json
 from datetime import datetime
@@ -115,9 +115,13 @@ def process_transcript(self, topic, message):
                         ):
                             print("SummaryAgent ============= input list:", transcripts_obj)
                             print("SummaryAgent ============= input for LLM:" + transcription_text)
-                            # new_summary = summarize(transcription_text) # the real summary from LLM 
+                            new_summary = summarize(transcription_text) # the real summary from LLM 
+                            new_summary_json = json.loads(new_summary) 
+                            if "ata" not in new_summary_json:
+                                new_summary_json["ata"]=[]
+
                             # new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"  
-                            new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
+                            # new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
 
                             if new_summary:
                                 summary_topic = f"agent-assist/{client_id}/summarization"
@@ -126,7 +130,7 @@ def process_transcript(self, topic, message):
                                     "parameters": {
                                         "conversationStartTime": start_time,
                                         "conversationid": client_id,
-                                        "text": new_summary,
+                                        "text": new_summary_json,
                                      },
                                     "conversationid": client_id,
                                 } 
