@@ -94,6 +94,7 @@ def process_transcript(self, topic, message):
                     # self.redis_client.delete(client_id)
                     pass
                 elif event_type == 'transcription':
+                    snum = 0
                     # external - GNBA
                     # internal - check completion
                     #last_transcript = json.loads(self.redis_client.lindex(client_id, -1))
@@ -130,14 +131,15 @@ def process_transcript(self, topic, message):
                             verified = 'unverified'
                             
                         
-                        ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified, verified)
+                        ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified, verified, snum)
+                        snum += 1
                         # action, options = "Do something", ["option1", "option2"]
                         quickActions = ragResponse['quickActions']
                         intentType = ragResponse['intentType']
                         pre_intent = intentType
                         logging.info(f"ragResponse: {ragResponse}")
                         
-                        snum = 0
+                        
                         if quickActions:
                             # maybe the action IDs can be random
                             # or they should be defined on the WA skill itself
@@ -153,8 +155,7 @@ def process_transcript(self, topic, message):
                             #         "action_id": action_id,
                             #         "options": options
                             #     }
-                            # })
-                            snum += 1
+                            # })                            
                             celeryMessage = json.dumps({
                                 "type": "new_action",
                                 "parameters": {

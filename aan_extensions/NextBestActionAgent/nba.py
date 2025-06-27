@@ -126,7 +126,7 @@ def calculate_similarity(text1, text2):
     return similarity[0][0]
 
 
-def get_quick_actions(conversationId, transcript, history_messages, pre_intent, identified, verified):
+def get_quick_actions(conversationId, transcript, history_messages, pre_intent, identified, verified, snum):
     # response = assistant.message(
     #     input={
     #         "conversationId": conversationId,
@@ -137,28 +137,42 @@ def get_quick_actions(conversationId, transcript, history_messages, pre_intent, 
     #         "pre_intent":"OrderStatus"
     #     }
     # ).get_result()
-    if pre_intent == "orderStatus" or pre_intent == "" or pre_intent == None and (identified != "unidentified" or verified != "unverified"):
+
+    
+    intentType = "orderStatus"
+    if pre_intent == "orderStatus" or pre_intent == "" or pre_intent == None and identified == "unidentified" and snum == 0:
+        intentType = "identify"
+        response = {
+            "conversationId": conversationId,
+            "intentType": intentType, ## NULL/None if no feedbak
+            "quickActions": ["please identify yourself"]
+        }
+        return response
+    elif identified == "identify" or verified == "unverified" and snum == 1:
+        intentType = "verify"
+        response = {
+            "conversationId": conversationId,
+            "intentType": intentType, ## NULL/None if no feedbak
+            "quickActions": ["please verify yourself"]
+        }
+        return response
+    elif identified == "identified" and verified == "verified":
         intentType = "orderStatus"
-        if identified == "unidentified":
-            intentType = "identify"
-        elif identified == "identified" and verified == "unverified":
-            intentType = "verify"
-        elif identified == "identified" and verified == "verified":
-            intentType = "orderStatus"
-        else:
-            intentType = "orderStatus"
-            
         response = {
             "conversationId": conversationId,
             "intentType": intentType, ## NULL/None if no feedbak
             "quickActions": ["check_order1", "check_order2", "check_order3"]
         }
+        return response
     else:
         response = {
             "conversationId": conversationId,
             "intentType": None, ## NULL/None if no feedbak
             "quickActions": None
         }
+        return response
+
+    
     return response
 
     
