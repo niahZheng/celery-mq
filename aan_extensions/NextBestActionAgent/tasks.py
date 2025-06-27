@@ -115,15 +115,19 @@ def process_transcript(self, topic, message):
                         identified_object = self.redis_client.get(client_id + '_identified')
                         verified_object = self.redis_client.get(client_id + '_verified')
 
-                        if identified_object and identified_object.get('identified'):
-                            identified = identified_object.get('identified') 
+                        if identified_object:
+                            identified_data = json.loads(identified_object)
+                            identified = identified_data.get('status', 'unidentified')
                         else:
                             self.redis_client.set(client_id + '_identified', json.dumps({'status': 'unidentified'}))
+                            identified = 'unidentified'
 
-                        if verified_object and verified_object.get('verified'):
-                            verified = verified_object.get('verified')
+                        if verified_object:
+                            verified_data = json.loads(verified_object)
+                            verified = verified_data.get('status', 'unverified')
                         else:
                             self.redis_client.set(client_id + '_verified', json.dumps({'status': 'unverified'}))
+                            verified = 'unverified'
                             
                         
                         ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified, verified)
