@@ -112,22 +112,28 @@ def process_transcript(self, topic, message):
                         print(f"transcripts_history: {transcripts_history}")
                         
                         # 检查Redis中是否存在client_id_identified数据
-                        identified_data = self.redis_client.get(client_id + '_identified')
-                        verified_data = self.redis_client.get(client_id + '_verified')
-                        if identified_data:
-                            identified = 'identified' 
-                        elif verified_data:
-                            verified = "verified"
+                        identified_object = self.redis_client.get(client_id + '_identified')
+                        verified_object = self.redis_client.get(client_id + '_verified')
+
+                        if identified_object and identified_object.get('identified'):
+                            identified = identified_object.get('identified') 
                         else:
-                            pass
+                            self.redis_client.set(client_id + '_identified', json.dumps({'status': 'unidentified'}))
+
+                        if verified_object and verified_object.get('verified'):
+                            verified = verified_object.get('verified')
+                        else:
+                            self.redis_client.set(client_id + '_verified', json.dumps({'status': 'unverified'}))
+                            
                         
                         ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified, verified)
                         # action, options = "Do something", ["option1", "option2"]
                         quickActions = ragResponse['quickActions']
                         intentType = ragResponse['intentType']
                         pre_intent = intentType
-                        logging.info(f"ragResponse: {ragResponse}")                        
-
+                        logging.info(f"ragResponse: {ragResponse}")
+                        
+                        snum = 0
                         if quickActions:
                             # maybe the action IDs can be random
                             # or they should be defined on the WA skill itself
@@ -143,12 +149,12 @@ def process_transcript(self, topic, message):
                             #         "action_id": action_id,
                             #         "options": options
                             #     }
-                            # })                            
-                            
+                            # })
+                            snum += 1
                             celeryMessage = json.dumps({
                                 "type": "new_action",
                                 "parameters": {
-                                    "text": "Do something",
+                                    "text": f"=== {snum} === This is a quick action demo",
                                     "action_id": "action789",
                                     "options": ["option1", "option2"],
                                     "quickActions": quickActions,
