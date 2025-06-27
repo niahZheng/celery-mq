@@ -125,6 +125,7 @@ Chat Transcript:
         result = response.json()
         try: 
             if "choices" in result and len(result["choices"])>0:
+                print("result choices 0..............", result["choices"][0])
                 return result["choices"][0]["message"]["content"]
             else:
                 print(f"response something wrong......error message: {response.text}")

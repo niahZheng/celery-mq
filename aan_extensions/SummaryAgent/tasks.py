@@ -124,18 +124,24 @@ def process_transcript(self, topic, message):
                         ):
                             print("SummaryAgent ============= input list:", transcripts_obj)
                             print("SummaryAgent ============= input for LLM:" + transcription_text)
+                            # new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"  
+                            # new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
                             new_summary = summarize(transcription_text) # the real summary from LLM 
+                            new_summary_json = {}
                             try:
                                 new_summary_json = json.loads(new_summary) 
                                 if "ata" not in new_summary_json:
                                     new_summary_json["ata"]=[]
                             except Exception as e:
+                                new_summary_json = {
+                                    "intent": "error in LLM", 
+                                    "request_changes": "n/a", 
+                                    "ata": [],
+                                }
                                 print(f"transcription_text....error message: {str(e)}")
                                 print(f"transcription_text....error type: {type(e)}")
 
-                            # new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"  
-                            # new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
-
+                            
                             if new_summary:
                                 summary_topic = f"agent-assist/{client_id}/summarization"
                                 summary_body = {
