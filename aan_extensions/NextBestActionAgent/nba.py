@@ -137,7 +137,7 @@ def get_quick_actions(conversationId, transcript, history_messages, pre_intent, 
     #         "pre_intent":"OrderStatus"
     #     }
     # ).get_result()
-    if pre_intent == "orderStatus" or pre_intent == "" or pre_intent == None:
+    if pre_intent == "orderStatus" or pre_intent == "" or pre_intent == None and (identified != "unidentified" or verified != "unverified"):
         intentType = "orderStatus"
         if identified == "unidentified":
             intentType = "identify"
