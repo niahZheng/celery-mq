@@ -137,21 +137,28 @@ def get_quick_actions(conversationId, transcript, history_messages, pre_intent, 
     #         "pre_intent":"OrderStatus"
     #     }
     # ).get_result()
-    intentType = "orderStatus"
-    if identified == "unidentified":
-        intentType = "Identify"
-    elif identified == "identified" and verified == "unverified":
-        intentType = "Verify"
-    elif identified == "identified" and verified == "verified":
+    if pre_intent == "orderStatus" or pre_intent == "" or pre_intent == None:
         intentType = "orderStatus"
+        if identified == "unidentified":
+            intentType = "Identify"
+        elif identified == "identified" and verified == "unverified":
+            intentType = "Verify"
+        elif identified == "identified" and verified == "verified":
+            intentType = "orderStatus"
+        else:
+            intentType = "orderStatus"
+            
+        response = {
+            "conversationId": conversationId,
+            "intentType": intentType, ## NULL/None if no feedbak
+            "quickActions": ["check_order1", "check_order2", "check_order3"]
+        }
     else:
-        intentType = "orderStatus"
-        
-    response = {
-        "conversationId": conversationId,
-        "intentType": intentType, ## NULL/None if no feedbak
-        "quickActions": ["check_order1", "check_order2", "check_order3"]
-    }
+        response = {
+            "conversationId": conversationId,
+            "intentType": None, ## NULL/None if no feedbak
+            "quickActions": None
+        }
     return response
 
     

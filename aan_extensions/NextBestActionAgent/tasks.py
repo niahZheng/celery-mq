@@ -149,7 +149,7 @@ def process_transcript(self, topic, message):
                             #         "action_id": action_id,
                             #         "options": options
                             #     }
-                            # })                            
+                            # })
                             snum += 1
                             celeryMessage = json.dumps({
                                 "type": "new_action",
