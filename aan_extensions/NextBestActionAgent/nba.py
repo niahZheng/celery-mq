@@ -140,9 +140,9 @@ def get_quick_actions(conversationId, transcript, history_messages, pre_intent, 
     if pre_intent == "orderStatus" or pre_intent == "" or pre_intent == None:
         intentType = "orderStatus"
         if identified == "unidentified":
-            intentType = "Identify"
+            intentType = "identify"
         elif identified == "identified" and verified == "unverified":
-            intentType = "Verify"
+            intentType = "verify"
         elif identified == "identified" and verified == "verified":
             intentType = "orderStatus"
         else:
