@@ -134,12 +134,12 @@ def process_transcript(self, topic, message):
                                     new_summary_json["ata"]=[]
                             except Exception as e:
                                 new_summary_json = {
-                                    "intent": "error in LLM", 
-                                    "request_changes": "n/a", 
+                                    "intent": "something goes wrong in backend", 
+                                    "request_changes": "please try again", 
                                     "ata": [],
                                 }
-                                print(f"transcription_text....error message: {str(e)}")
-                                print(f"transcription_text....error type: {type(e)}")
+                                print(f"json.loads LLM responnse....error message: {str(e)}")
+                                print(f"json.loads LLM responnse....error type: {type(e)}")
 
                             
                             if new_summary:

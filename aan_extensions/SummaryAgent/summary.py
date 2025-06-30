@@ -57,10 +57,10 @@ def summarize(conversations_string):
     prompt_template = f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>
 You are a helpful assistant that summarizes customer support chat transcripts. Given a chat conversation between a customer and an agent, extract:
 
-1. Intent – the customer's initial request or purpose for contacting.
-2. Request Changes – any updates or modifications requested by the customer (e.g., change flight date, booked a ticket).
+1. Intent - the customer's initial request or purpose for contacting.
+2. Request Changes - Summary of actions, tasks, or requests completed during the conversation, such as flight changed, ticket booked, or customer question answered. This includes any updates or modifications made based on the customer's input.
 
-Return the result in valid JSON format with keys: intent, request_changes.
+Output the result strictly in a valid JSON format with keys: intent, request_changes.
 Do not include any additional text or explanations, just the JSON output.
 
 ### Example 1:
@@ -125,8 +125,28 @@ Chat Transcript:
         result = response.json()
         try: 
             if "choices" in result and len(result["choices"])>0:
+                #===================special hard coding for returned JSON string.....start
                 print("result choices 0..............", result["choices"][0])
-                return result["choices"][0]["message"]["content"]
+                # return result["choices"][0]["message"]["content"]
+                xxx = result["choices"][0]["message"]["content"] 
+                # it is a string, sometimes with a wrong format, 
+                # 'content': '{\n  "intent": "Reschedule flight",\n  "request_changes": "Flight changed from August 20 to September 22"'}
+                # it is 22"'}, but it should be 22"}'
+                if '{' in xxx and '}' in xxx:
+                    print("JSON string..............we have both {}...we are good") 
+                    pass
+                elif '{' in xxx and '}' not in xxx:
+                    print("JSON string..............missing }") 
+                    xxx = xxx + '\n}'
+                elif '{' not in xxx and '}' in xxx:
+                    print("JSON string..............missing {") 
+                    xxx = '{\n ' + xxx 
+                else:    
+                    print("JSON string..............missing both {}") 
+                    xxx = '{\n ' + xxx + '\n}'
+                #===================special hard coding for returned JSON string.....end 
+                return xxx
+            
             else:
                 print(f"response something wrong......error message: {response.text}")
                 raise Exception(f"Error something wrong ({response.status_code}), returned text: {response.text}")
