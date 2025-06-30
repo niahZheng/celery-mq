@@ -57,8 +57,8 @@ def summarize(conversations_string):
     prompt_template = f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>
 You are a helpful assistant that summarizes customer support chat transcripts. Given a chat conversation between a customer and an agent, extract:
 
-1. Intent – the customer's initial request or purpose for contacting.
-2. Request Changes – any updates or modifications requested by the customer (e.g., change flight date, booked a ticket).
+1. Intent - the customer's initial request or purpose for contacting.
+2. Request Changes - Summary of actions, tasks, or requests completed during the conversation, such as flight changed, ticket booked, or customer question answered. This includes any updates or modifications made based on the customer's input.
 
 Return the result in valid JSON format with keys: intent, request_changes.
 Do not include any additional text or explanations, just the JSON output.
