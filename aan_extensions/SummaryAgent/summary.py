@@ -94,6 +94,8 @@ Output:
 }}
 ### Now process the following chat:
 
+ONLY use the chat transcript below to summarize the output in JSON format, do NOT speculate.
+
 Chat Transcript:
 {conversations_string}
 <|eot_id|>
