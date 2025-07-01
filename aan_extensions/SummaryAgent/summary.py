@@ -144,8 +144,10 @@ Chat Transcript:
                     print("JSON string..............missing {") 
                     xxx = '{\n ' + xxx 
                 else:    
-                    print("JSON string..............missing both {}") 
-                    xxx = '{\n ' + xxx + '\n}'
+                    # print("JSON string..............missing both {}") 
+                    # xxx = '{\n ' + xxx + '\n}'
+                    print("JSON string..............missing both {}", xxx) 
+                    xxx = '{\n "intent": "n/a", \n  "request_changes": "n/a" \n}'
                 #===================special hard coding for returned JSON string.....end 
                 return xxx
             
