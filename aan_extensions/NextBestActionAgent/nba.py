@@ -3,8 +3,8 @@ from ibm_watson import AssistantV2
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import nltk
-from nltk.tokenize import sent_tokenize, word_tokenize
+# import nltk
+# from nltk.tokenize import sent_tokenize, word_tokenize
 import logging
 import os
 
