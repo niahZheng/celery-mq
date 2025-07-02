@@ -164,6 +164,7 @@ def process_transcript(self, topic, message):
                     # self.redis_client.delete(client_id)
                     pass
                 elif event_type == 'transcription':
+                    snum = 0
                     # external - GNBA
                     # internal - check completion
                     #last_transcript = json.loads(self.redis_client.lindex(client_id, -1))
@@ -219,11 +220,55 @@ def process_transcript(self, topic, message):
                         else:
                             quickActions = None
                             
+                        ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified, verified, snum)
+                        snum += 1
+                        # action, options = "Do something", ["option1", "option2"]
+                        quickActions = ragResponse['quickActions']
+                        intentType = ragResponse['intentType']
+                        pre_intent = intentType
+                        logging.info(f"ragResponse: {ragResponse}")
+                        
+                        
                         if quickActions:
-                            self.redis_client.rpush(client_id + '_quick_actions', json.dumps(quickActions))                          
-                            emit_celery_message(self, client_id, quickActions, intentType, message_data)
-                        else:
-                            logging.info(f"No quick actions, no need to emit")
+                            # maybe the action IDs can be random
+                            # or they should be defined on the WA skill itself
+                            # action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
+                            # action_payload = {"action_id": action_id, "action": action, "status": "pending"}
+                            self.redis_client.rpush(client_id + '_quick_actions', json.dumps(quickActions))
+                            # emit messages to UI
+                            #publish_action(client, client_id, action, action_id,options)
+                            # celeryMessage = json.dumps({
+                            #     "type": "new_action",
+                            #     "parameters": {
+                            #         "text": action,
+                            #         "action_id": action_id,
+                            #         "options": options
+                            #     }
+                            # })                            
+                            celeryMessage = json.dumps({
+                                "type": "new_action",
+                                "parameters": {
+                                    "text": f"=== {snum} === This is a quick action demo",
+                                    "action_id": "action789",
+                                    "options": ["option1", "option2"],
+                                    "quickActions": quickActions,
+                                    "intentType": intentType,
+                                },
+                                "conversationid": message_data['conversationid']
+                            })
+                            logging.info(f"new_action celeryMessage: {celeryMessage}")
+                            celeryTopic = f"agent-assist/{client_id}/nextbestaction"
+                            self.sio.emit(
+                                    "celeryMessage",
+                                    {
+                                        "payloadString": celeryMessage,
+                                        "destinationName": celeryTopic,
+                                        'conversationid': message_data['conversationid']
+                                    },
+                                    callback=lambda *args: print("Message sent successfully:", args)
+                                    
+                            )
+                            print(f"new quick actions->ragResponse->emit_socketio: {celeryMessage}")
                     elif last_transcript['source'] == 'internal':
                         pass
                         #actions = json.loads(self.redis_client.lindex(client_id + '_nba_actions', -1) or "[]")

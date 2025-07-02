@@ -4,7 +4,7 @@ from BaseAgent import BaseTask
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind
 import traceback
-# from .summ import summarize
+from .summary import summarize
 import logging
 import json
 from datetime import datetime
@@ -65,6 +65,7 @@ def process_transcript(self, topic, message):
 
                     ###=============check type to see if we need to do summarization....end 
                     
+                    ###=============summarize main body....start
                     try:
                         transcripts_obj=[]
                         transcription_text=''
@@ -75,9 +76,13 @@ def process_transcript(self, topic, message):
                         turns_counter = self.redis_client.llen(client_id+"_session_started") or 0
                         print(f"Turns counter session_started: {turns_counter}")
                         if turns_counter > 0:
-                            start_body = self.redis_client.lindex(client_id+"_session_started", 0)
-                            start_info = json.loads(start_body)
-                            start_time = start_info["conversationStartTime"]
+                            try:
+                                start_body = self.redis_client.lindex(client_id+"_session_started", 0)
+                                start_info = json.loads(start_body)
+                                start_time = start_info["conversationStartTime"]
+                            except Exception as e:
+                                print(f"start_time....error message: {str(e)}")
+                                print(f"start_time....error type: {type(e)}")
                         #-----------get start time.......end
                         
                         #-----------get chat history.......start
@@ -86,29 +91,32 @@ def process_transcript(self, topic, message):
                         
                         # if (turns_counter != 0) and (turns_counter % 2 == 0):
                         if turns_counter != 0:
-                            transcripts_obj = self.redis_client.lrange(
-                                client_id, 0, -1
-                            )
-                            transcripts_dicts = [
-                                json.loads(item) for item in transcripts_obj
-                            ]
-                            transcription_text = "\n".join(
-                                f"{'Agent' if item['source'] == 'internal' else 'Customer'}: {item['text']}"
-                                for item in transcripts_dicts
-                            )
-                            print("SummaryAgent ============= input list 111:", transcripts_obj)
-                            print("SummaryAgent ============= input for LLM 111:" + transcription_text)
+                            try:
+                                transcripts_obj = self.redis_client.lrange(
+                                    client_id, 0, -1
+                                )
+                                transcripts_dicts = [
+                                    json.loads(item) for item in transcripts_obj
+                                ]
+                                transcription_text = "\n".join(
+                                    f"{'Agent' if item['source'] == 'internal' else 'Customer'}: {item['text']}"
+                                    for item in transcripts_dicts
+                                )
+                                print("SummaryAgent ============= input list 111:", transcripts_obj)
+                                print("SummaryAgent ============= input for LLM 111:" + transcription_text)
+                            except Exception as e:
+                                print(f"transcription_text....error message: {str(e)}")
+                                print(f"transcription_text....error type: {type(e)}")
                         #-----------get chat history.......end
 
                         print("SummaryAgent ============= input list 222:", transcripts_obj)
                         print("SummaryAgent ============= input for LLM 222:" + transcription_text)
 
                         #-----------get end time.......start
-                        print("testing..................conversationEndTime", message_data["parameters"]["conversationEndTime"])
-                        if message_data["parameters"]["conversationEndTime"]: 
+                        if "parameters" in message_data and "conversationEndTime" in message_data["parameters"]:
                             end_time = message_data["parameters"]["conversationEndTime"]
                         else:
-                            end_time = start_time
+                            end_time = None
                         #-----------get end time.......end
 
                         with trace.get_tracer(__name__).start_as_current_span(
@@ -116,25 +124,44 @@ def process_transcript(self, topic, message):
                         ):
                             print("SummaryAgent ============= input list:", transcripts_obj)
                             print("SummaryAgent ============= input for LLM:" + transcription_text)
-                            # new_summary = summarize(transcription_text) # the real summary from LLM 
                             # new_summary = "*********This is a test summary This is a test summary This is a test summary This is a test summary"  
-                            new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
+                            # new_summary = "*********This is a test summary:\nVerified customer’s identity and booking details.\nChecked availability for the new date (September 11th).\nConfirmed seat preference (Window seat).\nNoted unchanged meal preference (Standard meal).\nUpdated booking with new flight details.\nConfirmed booking update via email."
+                            new_summary = summarize(transcription_text) # the real summary from LLM 
+                            new_summary_json = {}
+                            try:
+                                new_summary_json = json.loads(new_summary) 
+                                if "ata" not in new_summary_json:
+                                    new_summary_json["ata"]=[]
+                            except Exception as e:
+                                new_summary_json = {
+                                    "intent": "something goes wrong in backend", 
+                                    "request_changes": "please try again", 
+                                    "ata": [],
+                                }
+                                print(f"json.loads LLM responnse....error message: {str(e)}")
+                                print(f"json.loads LLM responnse....error type: {type(e)}")
 
+                            
                             if new_summary:
                                 summary_topic = f"agent-assist/{client_id}/summarization"
-                                summary_message = json.dumps(
-                                    {
-                                        "type": "summary",
-                                        "parameters": {
-                                            "conversationStartTime": start_time,
-                                            "conversationEndTime": end_time,
-                                            "conversationid": client_id,
-                                            "text": new_summary,
-                                            # not used any more # "final":  True if message_type == "session_ended" else False,
-                                        },
+                                summary_body = {
+                                    "type": "summary",
+                                    "parameters": {
+                                        "conversationStartTime": start_time,
                                         "conversationid": client_id,
-                                    }
-                                )
+                                        "text": new_summary_json,
+                                     },
+                                    "conversationid": client_id,
+                                } 
+                                if end_time == None:
+                                    # UI click to trigger this, no end time
+                                    pass
+                                else:
+                                    # chat ends normally with end time 
+                                    summary_body["conversationEndTime"] = end_time
+
+                                #final string 
+                                summary_message = json.dumps(summary_body)
 
                                 if not self.sio:
                                     print("Error -------------- Socket.IO client is None")
@@ -161,10 +188,11 @@ def process_transcript(self, topic, message):
                                     print(f"Error sending Socket.IO message: {str(e)}")
                                     print(f"Error type: {type(e)}")
                                     print(f"Error traceback: {traceback.format_exc()}")
-
+                    ###=============summarize main body....end
                     except Exception as e:
-                        print(f"redis error message: {str(e)}")
-                        print(f"redis error type: {type(e)}")
+                        print(f"summarize main body....error message: {str(e)}")
+                        print(f"summarize main body....error type: {type(e)}")
+                    
                     
                 else:
                     print(f"SummaryAgent ============= client_id is NOT good, please check the message data \n")
