@@ -125,54 +125,18 @@ def calculate_similarity(text1, text2):
     similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
     return similarity[0][0]
 
-
-def get_quick_actions(conversationId, transcript, history_messages, pre_intent, identified, verified, snum):
-    # response = assistant.message(
-    #     input={
-    #         "conversationId": conversationId,
-    #         "verified": verified, ###verified/failed/unverified
-    #         "identified": identified, ###identified/failed/unidentified
-    #         "message": transcript，
-    #         "history_messages":["guest: hi, I need your help for my ticket order.", "agent: Sure, what can i do for you?"],
-    #         "pre_intent":"OrderStatus"
-    #     }
-    # ).get_result()
-
-    
-    intentType = "orderStatus"
-    if pre_intent == "orderStatus" or pre_intent == "" or pre_intent == None and identified == "unidentified" and snum == 0:
-        intentType = "identify"
-        response = {
-            "conversationId": conversationId,
-            "intentType": intentType, ## NULL/None if no feedbak
-            "quickActions": ["please identify yourself"]
+  
+def get_quick_actions(client_id, identified_flag, verified_flag, intentType, pre_intent, transcripts_history, idv_message):
+    response = assistant.message(
+        input={
+            "conversationId": client_id,
+            "identified": identified_flag, ###identified/failed/unidentified
+            "verified": verified_flag, ###verified/failed/unverified
+            "message": idv_message,
+            "history_messages":transcripts_history,
+            "pre_intent":pre_intent
         }
-        return response
-    elif identified == "identify" or verified == "unverified" and snum == 1:
-        intentType = "verify"
-        response = {
-            "conversationId": conversationId,
-            "intentType": intentType, ## NULL/None if no feedbak
-            "quickActions": ["please verify yourself"]
-        }
-        return response
-    elif identified == "identified" and verified == "verified":
-        intentType = "orderStatus"
-        response = {
-            "conversationId": conversationId,
-            "intentType": intentType, ## NULL/None if no feedbak
-            "quickActions": ["check_order1", "check_order2", "check_order3"]
-        }
-        return response
-    else:
-        response = {
-            "conversationId": conversationId,
-            "intentType": None, ## NULL/None if no feedbak
-            "quickActions": None
-        }
-        return response
-
-    
+    ).get_result()    
     return response
 
     
