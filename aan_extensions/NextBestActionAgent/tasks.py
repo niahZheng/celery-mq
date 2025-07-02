@@ -115,6 +115,7 @@ def emit_celery_message(self, client_id, quickActions, intentType, message_data)
 
 def handle_identify_intent(self, client_id, wxoResponse, idv_data):
     """处理identify意图，并更新idv_data"""
+    logging.info(f"handle_identify_intent: {idv_data}")
     idv_data['identified'] = "identified"
     idv_data['intentType'] = wxoResponse.get('intentType')
     idv_data['pre_intent'] = "identify"
@@ -201,7 +202,7 @@ def process_transcript(self, topic, message):
                                 "intentType": "OrderStatus", ## identify/verify/None/OrderStatus...
                                 "quickActions": ["check_order"],
                                 "message":"guest: I want to check my order detals"
-                                }
+                            }
                         else:
                             logging.info(f"Waiting for guest to identify or verify, no quick actions")
                             wxoResponse = None
