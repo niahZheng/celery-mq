@@ -125,7 +125,7 @@ def calculate_similarity(text1, text2):
     similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
     return similarity[0][0]
 
-
+  
 def get_quick_actions(client_id, identified_flag, verified_flag, intentType, pre_intent, transcripts_history, idv_message):
     response = assistant.message(
         input={
@@ -137,7 +137,6 @@ def get_quick_actions(client_id, identified_flag, verified_flag, intentType, pre
             "pre_intent":pre_intent
         }
     ).get_result()    
-
     return response
 
     

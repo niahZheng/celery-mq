@@ -12,12 +12,22 @@ assistant = AssistantV2(
 assistant.set_service_url('https://api.eu-gb.assistant.watson.cloud.ibm.com')
 # assistant.set_http_config({'timeout': 100})
 
-session_res = assistant.create_session(
-    assistant_id = env_id
-    # assistant_id='7186df10-ec55-46de-a739-e90bad4bd9aa'
-).get_result()
-print(session_res)
+test_id = "cda1ce9a-af1e-499d-897c-e82da9c165e5"
+test_type="session_ended" # "session_started" "session_ended" "transcription"
+topic = f"agent-assist/{test_id}/{test_type}" 
+test_message = {}
 
+if test_type == "session_ended": 
+    test_message = {
+        "type": test_type, 
+        "parameters": {
+            "conversationid": test_id,
+            "session_id": test_id,
+            "conversationStartTime": "2025-06-19 03:37:21.533123", 
+            # nothing if from UI 
+            "conversationEndTime": str(datetime.now()), # "2025-06-19 03:55:22.544123", # from Genesys
+        },
+    }
 
 response = assistant.message(
     assistant_id = env_id,
