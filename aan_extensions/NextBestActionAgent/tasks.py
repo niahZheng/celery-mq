@@ -217,16 +217,7 @@ def process_transcript(self, topic, message):
                             if intentType == "identify":
                                 handle_identify_intent(self, client_id, wxoResponse, idv_data)
                         else:
-                            quickActions = None
-                            
-                        ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified_flag, verified_flag, snum)
-                        snum += 1
-                        # action, options = "Do something", ["option1", "option2"]
-                        quickActions = ragResponse['quickActions']
-                        intentType = ragResponse['intentType']
-                        pre_intent = intentType
-                        logging.info(f"ragResponse: {ragResponse}")
-                        
+                            quickActions = None                        
                         
                         if quickActions:
                             # maybe the action IDs can be random
