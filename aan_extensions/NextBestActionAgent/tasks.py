@@ -115,7 +115,6 @@ def emit_celery_message(self, client_id, quickActions, intentType, message_data)
 
 def handle_identify_intent(self, client_id, wxoResponse, idv_data):
     """处理identify意图，并更新idv_data"""
-    logging.info(f"handle_identify_intent: {idv_data}")
     idv_data['identified'] = "identified"
     idv_data['intentType'] = wxoResponse.get('intentType')
     idv_data['pre_intent'] = "identify"
@@ -220,7 +219,7 @@ def process_transcript(self, topic, message):
                         else:
                             quickActions = None
                             
-                        ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified, verified, snum)
+                        ragResponse = get_quick_actions(client_id, last_transcript, transcripts_history, pre_intent, identified_flag, verified_flag, snum)
                         snum += 1
                         # action, options = "Do something", ["option1", "option2"]
                         quickActions = ragResponse['quickActions']
