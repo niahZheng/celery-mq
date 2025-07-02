@@ -126,39 +126,18 @@ def calculate_similarity(text1, text2):
     return similarity[0][0]
 
 
-def get_quick_actions(conversationId, transcript, history_messages, pre_intent, identified, verified):
-    # response = assistant.message(
-    #     input={
-    #         "conversationId": conversationId,
-    #         "verified": verified, ###verified/failed/unverified
-    #         "identified": identified, ###identified/failed/unidentified
-    #         "message": transcript，
-    #         "history_messages":["guest: hi, I need your help for my ticket order.", "agent: Sure, what can i do for you?"],
-    #         "pre_intent":"OrderStatus"
-    #     }
-    # ).get_result()
-    if pre_intent == "orderStatus" or pre_intent == "" or pre_intent == None:
-        intentType = "orderStatus"
-        if identified == "unidentified":
-            intentType = "Identify"
-        elif identified == "identified" and verified == "unverified":
-            intentType = "Verify"
-        elif identified == "identified" and verified == "verified":
-            intentType = "orderStatus"
-        else:
-            intentType = "orderStatus"
-            
-        response = {
-            "conversationId": conversationId,
-            "intentType": intentType, ## NULL/None if no feedbak
-            "quickActions": ["check_order1", "check_order2", "check_order3"]
+def get_quick_actions(client_id, identified_flag, verified_flag, intentType, pre_intent, transcripts_history, idv_message):
+    response = assistant.message(
+        input={
+            "conversationId": client_id,
+            "identified": identified_flag, ###identified/failed/unidentified
+            "verified": verified_flag, ###verified/failed/unverified
+            "message": idv_message,
+            "history_messages":transcripts_history,
+            "pre_intent":pre_intent
         }
-    else:
-        response = {
-            "conversationId": conversationId,
-            "intentType": None, ## NULL/None if no feedbak
-            "quickActions": None
-        }
+    ).get_result()    
+
     return response
 
     
