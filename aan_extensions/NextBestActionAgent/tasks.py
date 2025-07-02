@@ -199,7 +199,7 @@ def process_transcript(self, topic, message):
                             # )
                             wxoResponse = {
                                 "conversationId": client_id,
-                                "intentType": "OrderStatus", ## identify/verify/None/OrderStatus...
+                                "intentType": "identify", ## identify/verify/None/OrderStatus...
                                 "quickActions": ["check_order"],
                                 "message":"guest: I want to check my order detals"
                             }
