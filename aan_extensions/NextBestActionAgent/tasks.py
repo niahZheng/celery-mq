@@ -120,7 +120,7 @@ def handle_identify_intent(self, client_id, wa_session_id, waResponse, idv_data)
     idv_data['session_ID'] = wa_session_id
     idv_data['Identified'] = "identified"
     idv_data['pre_intent'] = "identify"
-    idv_data['QA_inProgress'] = "True"
+    idv_data['QA_inProgress'] = "False"
     idv_data['quickActions'] = waResponse.get('quickActions')
     self.redis_client.set(client_id + '_idv', json.dumps(idv_data))
 
