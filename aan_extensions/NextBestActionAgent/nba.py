@@ -1,10 +1,4 @@
-import json
-from ibm_watson import AssistantV2
-from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-# import nltk
-# from nltk.tokenize import sent_tokenize, word_tokenize
+import requests
 import logging
 import os
 
@@ -15,128 +9,74 @@ logging.basicConfig(level=logging.INFO)
 from dotenv import load_dotenv
 load_dotenv()
 
-# Watson Assistant credentials
-assistant_apikey = os.getenv('AAN_ASSISTANT_APIKEY')
-assistant_url = os.getenv('AAN_ASSISTANT_URL')
-assistant_id = os.getenv('AAN_ASSISTANT_ID') or os.getenv('AAN_ASSISTANT_ENVIRONMENT_ID')
+auth_url = f"{os.getenv('AAN_ASSISTANT_URL')}/icp4d-api/v1/authorize"
+payload = {
+    "username": os.getenv('AAN_ASSISTANT_USERNAME'),
+    "password": os.getenv('AAN_ASSISTANT_PASSWORD')
+}
+response = requests.post(auth_url, json=payload, verify=False)
+wa_token =response.json()["token"]
+print("watsonx assistant token:", wa_token)
 
-# Initialize Watson Assistant
-authenticator = IAMAuthenticator(assistant_apikey)
-assistant = AssistantV2(
-    version='2023-06-15',
-    authenticator=authenticator
-)
-assistant.set_service_url(assistant_url)
+assistant_url = f"{os.getenv('AAN_ASSISTANT_URL')}/assistant/ibm-software-hub-services-wo-wa"
+assistant_instance = os.getenv('AAN_ASSISTANT_INSTANCE')
+assistant_id = os.getenv('AAN_ASSISTANT_ID')
+api_version = os.getenv('AAN_ASSISTANT_API_VERSION') 
+
 
 def create_session():
-    # Creates a new session and returns session_id
-    response = assistant.create_session(assistant_id=assistant_id).get_result()
-    return response['session_id']
+    # Create session
+    headers = {
+        "Authorization": f"Bearer {wa_token}",
+        "accept": "application/json"
+    }
+    ############## This Request is for creating new session to get session ID 
+    # First request to create session
+    session_url = f"{assistant_url}/instances/{assistant_instance}/api/v2/assistants/{assistant_id}/sessions?version={api_version}"
+    try:
+        response = requests.post(
+            session_url,
+            headers=headers,
+            verify=False
+        )
+        #response.raise_for_status()
+        body = response.json()    
+        sessionId = body['session_id']
+        return sessionId
+    except requests.exceptions.RequestException as error:
+        print(f"Error: {error}")
+        raise
 
-def check_if_worth_sending(transcript):
-    if len(transcript.split(" ")) < 3:
-        return False
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(script_dir, "common_phrases.txt")
-    with open(file_path, "r") as file:
-        common_phrases = file.read().splitlines()
-
-    transcript_cleaned = transcript.lower().strip()
-    vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform([transcript_cleaned] + list(common_phrases))
-    transcript_vector = tfidf_matrix[0:1] 
-    max_similarity = 0
-
-    for i in range(1, tfidf_matrix.shape[0]): 
-        similarity = cosine_similarity(transcript_vector, tfidf_matrix[i:i+1])[0][0]
-        max_similarity = max(max_similarity, similarity)
-
-    threshold = 0.9 
-    return max_similarity < threshold
-    #return True
-
-def generate_next_best_action(session_id, transcript, assistant_session_id, bypass=False):
-    if check_if_worth_sending(transcript) or bypass:
-        response = assistant.message(
-            assistant_id=assistant_id,
-            session_id=assistant_session_id,
-            input={
-                'message_type': 'text',
-                'text': transcript
-            }
-        ).get_result()
-
-        logging.info(f"Watson Assistant response for session {assistant_session_id}: {json.dumps(response, indent=2)}")
-
-        action_text = 'No action suggested.'
-        options = []
-
-        if 'output' in response and 'generic' in response['output']:
-            for response_item in response['output']['generic']:
-                if response_item.get('response_type') == 'text':
-                    action_text = response_item.get('text', action_text)
-                    
-                    # so far, on assistant, it will send a noresponse text back for blank action
-                    if action_text == 'noresponse':
-                        action_text = ""
-                        options = ""
-                elif response_item.get('response_type') == 'option':
-                    options = response_item.get('options', [])
-
-        return action_text, options
-    print(f"not worth sending transcript: {transcript}")
-    return "",""
-
-def check_action_completion(session_id, agent_message,actions):
-    # actions is a python list of strings
-    completed_actions_idx = []
-    completed_actions_id = []
-    agent_sentences, _ = tokenize(agent_message)
-    logging.info(f"Checking action completion for session {session_id} with message: {agent_message[:50]}")
-
-    # modified
-    # actions is array of:
-    # {"action_id": action_id, "action": action, "status": "pending"}
-    for idx, action_details_str in enumerate(actions):
-        action_details = json.loads(action_details_str)
-        print(f"action_details: {action_details}")
-        action_id = action_details['action_id']
-        action_text = action_details['action'].lower().strip()
-        for sentence in agent_sentences:
-            similarity = calculate_similarity(sentence, action_text)
-            print(f"similarity: {similarity} for {sentence}")
-            if similarity > 0.5:
-                completed_actions_idx.append(idx)
-                completed_actions_id.append(action_id)
-                logging.info(f"Marking action ID {action_id} as completed for session {session_id}")
-                break
-    return completed_actions_idx, completed_actions_id
-
-def tokenize(text):
-    # sentences = sent_tokenize(text)
-    # words = word_tokenize(text)
-    sentences = [text]
-    words = [text]
-    return sentences, words
-
-def calculate_similarity(text1, text2):
-    vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform([text1, text2])
-    similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
-    return similarity[0][0]
-
-  
-def get_quick_actions(client_id, identified_flag, verified_flag, intentType, pre_intent, transcripts_history, idv_message):
-    response = assistant.message(
-        input={
-            "conversationId": client_id,
-            "identified": identified_flag, ###identified/failed/unidentified
-            "verified": verified_flag, ###verified/failed/unverified
-            "message": idv_message,
-            "history_messages":transcripts_history,
-            "pre_intent":pre_intent
+def generate_quick_actions(wa_session_id, message_payload):
+    headers = {
+        "Authorization": f"Bearer {wa_token}",
+        "accept": "application/json"
+    }
+    try:
+        message_url = f"{assistant_url}/instances/{assistant_instance}/api/v2/assistants/{assistant_id}/sessions/{wa_session_id}/message?version={api_version}"  # Add your URL here
+        
+        response = requests.post(
+            message_url,
+            headers=headers,
+            json=message_payload,
+            verify=False
+        )
+        response_data= response.json()
+        response_texts = [
+            item["text"]
+            for item in response_data.get("output", {}).get("generic", [])
+            if item.get("response_type") == "text"
+        ]
+        custom_response = {
+            "session_ID": response_data.get("context", {}).get("global", {}).get("session_id", "unknown"),
+            "intentType": response_data.get("context", {}).get("skills", {}).get("actions skill", {}).get("skill_variables", {}).get("intent", "None"),
+            "quickActions": response_texts,
+            "query" :response_data.get("context", {}).get("skills", {}).get("actions skill", {}).get("skill_variables", {}).get("query_", ""),
+            "conversation_ID":  response_data.get("context", {}).get("skills", {}).get("actions skill", {}).get("skill_variables", {}).get("conversation_ID", "None"),
         }
-    ).get_result()    
-    return response
+        return custom_response        
+    except requests.exceptions.RequestException as error:
+        print(f"Error: {error}")
+        raise
 
     

@@ -4,7 +4,9 @@ from BaseAgent import BaseTask
 import logging
 import json
 import re
-from .nba import generate_next_best_action, check_action_completion, create_session, get_quick_actions
+import requests
+
+from .nba import generate_quick_actions, create_session
 
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind
@@ -113,13 +115,34 @@ def emit_celery_message(self, client_id, quickActions, intentType, message_data)
     )
     print(f"new quick actions->ragResponse->emit_socketio: {celeryMessage}")
 
-def handle_identify_intent(self, client_id, wxoResponse, idv_data):
+def handle_identify_intent(self, client_id, wa_session_id, waResponse, idv_data):
     """处理identify意图，并更新idv_data"""
-    idv_data['identified'] = "identified"
-    idv_data['intentType'] = wxoResponse.get('intentType')
+    idv_data['session_ID'] = wa_session_id
+    idv_data['Identified'] = "identified"
     idv_data['pre_intent'] = "identify"
-    idv_data['message'] = wxoResponse.get('message')
+    idv_data['QA_inProgress'] = "True"
+    idv_data['quickActions'] = waResponse.get('quickActions')
     self.redis_client.set(client_id + '_idv', json.dumps(idv_data))
+
+def get_watsonx_assistant_message(self, token, assistant_url, assistant_instance, assistant_id, api_version, sessionId, payload):
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "accept": "application/json"
+    }
+    try:
+        message_url = f"{assistant_url}/assistant//instances/{assistant_instance}/api/v2/assistants/{assistant_id}/sessions/{sessionId}/message?version={api_version}"  # Add your URL here
+        response = requests.post(
+            message_url,
+            headers=headers,
+            json=payload,
+            verify=False
+        )
+        response_data= response.json()
+        print(response_data)
+        return response_data        
+    except requests.exceptions.RequestException as error:
+        print(f"Error: {error}")
+        raise
 
 # WORK IN PROGRESS - PLACEHOLDER
 # this runs after cache agent, which means the transcriptions are there
@@ -188,53 +211,51 @@ def process_transcript(self, topic, message):
                         verified_flag = idv_info['verified']
                         intentType = idv_info['intentType']
                         pre_intent = idv_info['pre_intent']
-                        idv_message = idv_info['message']
+                        idv_QA_inProgress = idv_info['QA_inProgress']
                         idv_data = idv_info['data']
 
                         # 判断是否需要获取快速操作
-                        if should_get_quick_actions(pre_intent, identified_flag, verified_flag):
-                            # wxoResponse = get_quick_actions(
-                            #     client_id, identified_flag, verified_flag, 
-                            #     intentType, pre_intent, transcripts_history, idv_message
-                            # )
-                            wxoResponse = {
-                                "conversationId": client_id,
-                                "intentType": "identify", ## identify/verify/None/OrderStatus...
-                                "quickActions": ["check_order"],
-                                "message":"guest: I want to check my order detals"
+                        if idv_QA_inProgress != "True":
+                            wa_session_id=create_session() 
+                            message_payload = {
+                                "input": {
+                                    "text": last_transcript["text"],
+                                    'options': {'return_context': True}
+                                },        
+                                "context" : {
+                                    'skills': {
+                                    'actions skill': {
+                                        'skill_variables': {
+                                            'Identified': identified_flag,
+                                            'Verified': verified_flag,
+                                            'pre_intent':pre_intent,
+                                            'QA_inProgress': idv_QA_inProgress, #False
+                                            "conversation_ID":client_id,
+                                            "session_id":wa_session_id
+                                            }
+                                        }
+                                    }
+                                }
                             }
+                            waResponse=generate_quick_actions(wa_session_id, message_payload)
+                            print(f"watsonx_assistant_message: {waResponse}")
                         else:
                             logging.info(f"Waiting for guest to identify or verify, no quick actions")
-                            wxoResponse = None
+                            waResponse = None
 
-                        if wxoResponse:
-                            logging.info(f"WXO_Response: {wxoResponse}")
-                            intentType = wxoResponse.get('intentType')
-                            quickActions = wxoResponse.get('quickActions')
+                        if waResponse:
+                            logging.info(f"wa_response: {waResponse}")
+                            intentType = waResponse.get('intentType')
+                            quickActions = waResponse.get('quickActions')
                             pre_intent = intentType
-                            
                             # 首次遇到 identify 时，将 identified 设置为 identified
-                            if intentType == "identify":
-                                handle_identify_intent(self, client_id, wxoResponse, idv_data)
+                            if intentType.contains("identify"):
+                                handle_identify_intent(self, client_id, wa_session_id, waResponse, idv_data)
                         else:
-                            quickActions = None                        
+                            quickActions = None
                         
                         if quickActions:
-                            # maybe the action IDs can be random
-                            # or they should be defined on the WA skill itself
-                            # action_id = self.redis_client.llen(client_id + '_nba_actions') or 0
-                            # action_payload = {"action_id": action_id, "action": action, "status": "pending"}
-                            self.redis_client.rpush(client_id + '_quick_actions', json.dumps(quickActions))
-                            # emit messages to UI
-                            #publish_action(client, client_id, action, action_id,options)
-                            # celeryMessage = json.dumps({
-                            #     "type": "new_action",
-                            #     "parameters": {
-                            #         "text": action,
-                            #         "action_id": action_id,
-                            #         "options": options
-                            #     }
-                            # })                            
+                            self.redis_client.rpush(client_id + '_quick_actions', json.dumps(quickActions))                           
                             celeryMessage = json.dumps({
                                 "type": "new_action",
                                 "parameters": {
