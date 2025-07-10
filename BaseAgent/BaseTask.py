@@ -3,6 +3,10 @@ import socketio
 import redis
 import os
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from celery import Task
 
@@ -15,12 +19,28 @@ class BaseTask(Task):
     @property
     def sio(self):
         if self._sio is None:
-            self._sio = socketio.Client(logger=False, engineio_logger=False)
-            self._sio.connect(
-                # "https://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io"
-                os.getenv("AAN_CELERY_SIO_URI", "https://rx-api-server-ddfrdga2exavdcbb.canadacentral-01.azurewebsites.net:443/socket.io")
-            )
-            print("===============================Socketio client initialized")
+            try:
+                self._sio = socketio.Client(logger=False, engineio_logger=False)
+                print("========os.getenv('ANN_SOCKETIO_SERVER'):", os.getenv("ANN_SOCKETIO_SERVER"))
+                socketio_url = os.getenv("ANN_SOCKETIO_SERVER")
+                if socketio_url:
+                    self._sio.connect(socketio_url)
+                    self._sio_status = True
+                    print("Socketio client initialized and connected")
+                else:
+                    print("ANN_SOCKETIO_SERVER not configured, Socket.IO disabled")
+                    self._sio_status = False
+            except Exception as e:
+                print(f"Socket.IO connection failed: {e}")
+                self._sio_status = False
+                # Create a mock sio object that does nothing
+                class MockSio:
+                    def emit(self, *args, **kwargs):
+                        print("Mock Socket.IO emit called (no connection)")
+                    @property
+                    def connected(self):
+                        return False
+                self._sio = MockSio()
         return self._sio
 
     @property
@@ -32,8 +52,9 @@ class BaseTask(Task):
             #     db=os.getenv("AAN_REDIS_DB_INDEX", 2),
             # )
             try:
-                redis_url = f"{os.getenv('REDIS_PROTOCOL', 'rediss')}://default:{os.getenv('REDIS_PASSWORD', '')}@{os.getenv('REDIS_URL', 'rx-redis.redis.cache.windows.net:6380/1')}"
-                print("Redis connection...................redis_url: ", redis_url)
+                redis_url = f"rediss://default:{os.getenv('REDIS_PASSWORD', '')}@rx-redis.redis.cache.windows.net:6380/1"
+                # redis_url = os.getenv("ANN_REDIS_URL")
+                print("Redis connection redis_url: ", redis_url)
                 
                 self._redis_client = redis.from_url(
                     redis_url,

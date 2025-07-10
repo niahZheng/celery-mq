@@ -37,7 +37,7 @@ def publish_action(client, session_id, action, action_id, options=[]):
         "parameters": {
             "text": action,
             "action_id": action_id,
-            "options": options 
+            "options": options
         }
     })
 
@@ -47,35 +47,50 @@ def publish_action(client, session_id, action, action_id, options=[]):
 
 def get_or_create_idv_data(self, client_id):
     """获取或创建IDV数据"""
-    idv_object = self.redis_client.get(client_id + '_idv')
-    if idv_object:
-        idv_data = json.loads(idv_object)
+    try:
+        if self.redis_client is None:
+            print("Redis client not available, returning default idv_data")
+            return {
+                'session_ID': None,
+                'conversation_ID': client_id,
+                'Identified': 'unidentified',
+                'Verified': 'unverified',
+                'QA_inProgress': 'True',
+                'pre_intent': '',
+                'intentType': None,
+                'text': ''
+            }
+        
+        idv_object = self.redis_client.get(client_id + '_idv')
+        if idv_object:
+            idv_data = json.loads(idv_object)
+            return idv_data
+        else:
+            # 如果不存在，创建默认的idv对象
+            idv_data = {
+                'session_ID': None,
+                'conversation_ID': client_id,
+                'Identified': 'unidentified',
+                'Verified': 'unverified',
+                'QA_inProgress': 'True',
+                'pre_intent': '',
+                'intentType': None,
+                'text': ''
+            }
+            self.redis_client.set(client_id + '_idv', json.dumps(idv_data))
+            return idv_data
+    except Exception as e:
+        print(f"Error in get_or_create_idv_data: {e}")
+        # Return default data if Redis operations fail
         return {
-            'identified': idv_data.get('identified', 'unidentified'),
-            'verified': idv_data.get('verified', 'unverified'),
-            'intentType': idv_data.get('intentType'),
-            'pre_intent': idv_data.get('pre_intent'),
-            'message': idv_data.get('message'),
-            'data': idv_data
-        }
-    else:
-        # 如果不存在，创建默认的idv对象
-        idv_data = {
-            'identified': 'unidentified',
-            'verified': 'unverified',
-            'conversationid': client_id,
+            'session_ID': None,
+            'conversation_ID': client_id,
+            'Identified': 'unidentified',
+            'Verified': 'unverified',
+            'QA_inProgress': 'True',
+            'pre_intent': '',
             'intentType': None,
-            'pre_intent': None,
-            'message': None
-        }
-        self.redis_client.set(client_id + '_idv', json.dumps(idv_data))
-        return {
-            'identified': 'unidentified',
-            'verified': 'unverified',
-            'intentType': None,
-            'pre_intent': None,
-            'message': None,
-            'data': idv_data
+            'text': ''
         }
 
 def should_get_quick_actions(pre_intent, identified_flag, verified_flag):
@@ -117,12 +132,23 @@ def emit_celery_message(self, client_id, quickActions, intentType, message_data)
 
 def handle_identify_intent(self, client_id, wa_session_id, waResponse, idv_data):
     """处理identify意图，并更新idv_data"""
-    idv_data['session_ID'] = wa_session_id
-    idv_data['Identified'] = "identified"
-    idv_data['pre_intent'] = "identify"
-    idv_data['QA_inProgress'] = "False"
-    idv_data['quickActions'] = waResponse.get('quickActions')
-    self.redis_client.set(client_id + '_idv', json.dumps(idv_data))
+    try:
+        idv_data['session_ID'] = wa_session_id
+        idv_data['Identified'] = "identified"
+        idv_data['pre_intent'] = "Guest Identification"
+        idv_data['QA_inProgress'] = "False"
+        idv_data['text'] = waResponse.get('query')
+        
+        # Check if Redis client is available
+        if self.redis_client is not None:
+            self.redis_client.set(client_id + '_idv', json.dumps(idv_data))
+            print("idv_data after handle_identify_intent and save to redis: ", idv_data)
+        else:
+            print("Redis client not available, cannot save idv_data")
+            print("idv_data that would have been saved: ", idv_data)
+    except Exception as e:
+        print(f"Error in handle_identify_intent: {e}")
+        print("idv_data that failed to save: ", idv_data)
 
 def get_watsonx_assistant_message(self, token, assistant_url, assistant_instance, assistant_id, api_version, sessionId, payload):
     headers = {
@@ -202,24 +228,27 @@ def process_transcript(self, topic, message):
                         # nba_length = self.redis_client.llen(client_id + '_nba_actions')
                         # print(f"nba_length {nba_length}")
                         # if nba_length == 0:
-                        transcripts_history = self.redis_client.lrange(client_id, 0, -1)
-                        print(f"transcripts_history: {transcripts_history}")
+                        # transcripts_history = self.redis_client.lrange(client_id, 0, -1)
+                        # print(f"transcripts_history: {transcripts_history}")
                         
                         # 从 redis 获取或创建IDV数据
-                        idv_info = get_or_create_idv_data(self, client_id)
-                        identified_flag = idv_info['identified']
-                        verified_flag = idv_info['verified']
-                        intentType = idv_info['intentType']
-                        pre_intent = idv_info['pre_intent']
-                        idv_QA_inProgress = idv_info['QA_inProgress']
-                        idv_data = idv_info['data']
+                        idv_info = get_or_create_idv_data(self, client_id) 
+                        print("idv_info: ", idv_info)
+                        identified_flag = idv_info.get('Identified', 'unidentified')
+                        verified_flag = idv_info.get('Verified', 'unverified')
+                        intentType = idv_info.get('intentType')
+                        pre_intent = idv_info.get('pre_intent', '')
+                        idv_QA_inProgress = idv_info.get('QA_inProgress', 'True')
+                        print("idv_QA_inProgress: ", idv_QA_inProgress)
 
-                        # 判断是否需要获取快速操作
-                        if idv_QA_inProgress != "True":
+                        # 判断是否需要获取快速操作 True代表qa正常使用，False表示正在验证
+                        if idv_QA_inProgress == "True":
+                            print("idv_QA_inProgress == True")
                             wa_session_id=create_session() 
                             message_payload = {
                                 "input": {
-                                    "text": last_transcript["text"],
+                                    # "text": last_transcript["text"],
+                                    "text": "What is my baggage allowance for econemy class",
                                     'options': {'return_context': True}
                                 },        
                                 "context" : {
@@ -237,49 +266,49 @@ def process_transcript(self, topic, message):
                                     }
                                 }
                             }
+                            print("message_payload will be sent to watsonx_assistant: ", message_payload)
                             waResponse=generate_quick_actions(wa_session_id, message_payload)
-                            print(f"watsonx_assistant_message: {waResponse}")
-                        else:
-                            logging.info(f"Waiting for guest to identify or verify, no quick actions")
-                            waResponse = None
-
-                        if waResponse:
-                            logging.info(f"wa_response: {waResponse}")
+                            print("generate_quick_actions: ", waResponse)
                             intentType = waResponse.get('intentType')
+                            if intentType:
+                                intentType = intentType.strip()
                             quickActions = waResponse.get('quickActions')
                             pre_intent = intentType
                             # 首次遇到 identify 时，将 identified 设置为 identified
-                            if intentType.contains("identify"):
-                                handle_identify_intent(self, client_id, wa_session_id, waResponse, idv_data)
-                        else:
-                            quickActions = None
-                        
-                        if quickActions:
-                            self.redis_client.rpush(client_id + '_quick_actions', json.dumps(quickActions))                           
-                            celeryMessage = json.dumps({
-                                "type": "new_action",
-                                "parameters": {
-                                    "text": f"=== {snum} === This is a quick action demo",
-                                    "action_id": "action789",
-                                    "options": ["option1", "option2"],
-                                    "quickActions": quickActions,
-                                    "intentType": intentType,
-                                },
-                                "conversationid": message_data['conversationid']
-                            })
-                            logging.info(f"new_action celeryMessage: {celeryMessage}")
-                            celeryTopic = f"agent-assist/{client_id}/nextbestaction"
-                            self.sio.emit(
-                                    "celeryMessage",
-                                    {
-                                        "payloadString": celeryMessage,
-                                        "destinationName": celeryTopic,
-                                        'conversationid': message_data['conversationid']
+                            if "Guest Identification" in intentType:
+                                handle_identify_intent(self, client_id, wa_session_id, waResponse, idv_info)
+                            if quickActions:
+                                self.redis_client.rpush(client_id + '_quick_actions', json.dumps(quickActions))                           
+                                celeryMessage = json.dumps({
+                                    "type": "new_action",
+                                    "parameters": {
+                                        "text": f"=== {snum} === This is a quick action demo",
+                                        "action_id": "action789",
+                                        "options": ["option1", "option2"],
+                                        "quickActions": quickActions,
+                                        "intentType": intentType,
                                     },
-                                    callback=lambda *args: print("Message sent successfully:", args)
-                                    
-                            )
-                            print(f"new quick actions->ragResponse->emit_socketio: {celeryMessage}")
+                                    "conversationid": message_data['conversationid']
+                                })
+                                logging.info(f"new_action celeryMessage: {celeryMessage}")
+                                celeryTopic = f"agent-assist/{client_id}/nextbestaction"                                
+                                # Check if Socket.IO is connected before emitting
+                                if hasattr(self.sio, 'connected') and self.sio.connected:
+                                    self.sio.emit(
+                                            "celeryMessage",
+                                            {
+                                                "payloadString": celeryMessage,
+                                                "destinationName": celeryTopic, 
+                                                'conversationid': message_data['conversationid']
+                                            },
+                                            callback=lambda *args: print("Message sent successfully:", args)
+                                    )
+                                    print(f"new quick actions->ragResponse->emit_socketio: {celeryMessage}")
+                                else:
+                                    print("Socket.IO not connected, skipping emit")
+                        else:
+                            logging.info(f"Waiting for guest to identify or verify, no quick actions")
+                            waResponse = None
                     elif last_transcript['source'] == 'internal':
                         pass
                         #actions = json.loads(self.redis_client.lindex(client_id + '_nba_actions', -1) or "[]")
@@ -345,16 +374,20 @@ def process_transcript(self, topic, message):
                                 }
                             })
                             celeryTopic = f"agent-assist/{client_id}/nextbestaction"
-                            self.sio.emit(
-                                    "celeryMessage",
-                                    {
-                                        "payloadString": celeryMessage,
-                                        "destinationName": celeryTopic,
-                                        'conversationid': message_data['conversationid']
-                                    },
-                                    callback=lambda *args: print("Message sent successfully:", args)
-                                    
-                            )
+                            
+                            # Check if Socket.IO is connected before emitting
+                            if hasattr(self.sio, 'connected') and self.sio.connected:
+                                self.sio.emit(
+                                        "celeryMessage",
+                                        {
+                                            "payloadString": celeryMessage,
+                                            "destinationName": celeryTopic,
+                                            'conversationid': message_data['conversationid']
+                                        },
+                                        callback=lambda *args: print("Message sent successfully:", args)
+                                )
+                            else:
+                                print("Socket.IO not connected, skipping emit for manual completion")
         except Exception as e:
             print(e)
     # the return result is stored in the celery backend

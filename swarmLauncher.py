@@ -5,6 +5,10 @@ import celery
 import sys
 import os
 import threading
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Define a function to generate a random string of characters
 def generate_random_string(length):
@@ -28,7 +32,7 @@ print(f"Starting Flower monitoring on port {port}")
 print("celery hostname.............................", worker_name_prefix + generate_random_string(8))
 worker_process = subprocess.Popen(
     # f"celery -A celery_worker worker --loglevel=DEBUG --pool=solo --concurrency=4 -Q celery,hipri --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
-    f"celery -A celery_worker worker -n single_worker.%h --loglevel=DEBUG --pool=solo -Q celery --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
+    f"celery -A celery_worker worker -n single_worker.%h --loglevel=INFO --pool=solo -Q celery --max-tasks-per-child=1000 --max-memory-per-child=512000 --hostname={worker_name_prefix + generate_random_string(8)} 2>&1",
     shell=True,
     stdout=subprocess.PIPE,
     stderr=subprocess.STDOUT,

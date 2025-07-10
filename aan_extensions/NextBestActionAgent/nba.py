@@ -18,7 +18,7 @@ response = requests.post(auth_url, json=payload, verify=False)
 wa_token =response.json()["token"]
 print("watsonx assistant token:", wa_token)
 
-assistant_url = f"{os.getenv('AAN_ASSISTANT_URL')}/assistant/ibm-software-hub-services-wo-wa"
+assistant_url = f"{os.getenv('AAN_ASSISTANT_URL')}/assistant/{os.getenv('AAN_ASSISTANT_DEPLOYMENT_ID')}"
 assistant_instance = os.getenv('AAN_ASSISTANT_INSTANCE')
 assistant_id = os.getenv('AAN_ASSISTANT_ID')
 api_version = os.getenv('AAN_ASSISTANT_API_VERSION') 
