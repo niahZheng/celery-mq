@@ -247,8 +247,8 @@ def process_transcript(self, topic, message):
                             wa_session_id=create_session() 
                             message_payload = {
                                 "input": {
-                                    # "text": last_transcript["text"],
-                                    "text": "What is my baggage allowance for econemy class",
+                                    "text": last_transcript["text"],
+                                    # "text": "What is my baggage allowance for econemy class",
                                     'options': {'return_context': True}
                                 },        
                                 "context" : {
